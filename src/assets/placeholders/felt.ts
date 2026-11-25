@@ -85,28 +85,111 @@ export interface FeltOptions {
   light?: number;
 }
 
+// ── 섬유 패턴 (성능: 수천 개 stroke 대신 작은 타일 1장을 미리 그려 재사용) ──
+const FIBER_TILE = 128;
+let fiberTile: HTMLCanvasElement | null = null;
+let fiberTileFine: HTMLCanvasElement | null = null;
+
+function makeFiberTile(seed: number, count: number, lightA: number, darkA: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = FIBER_TILE;
+  c.height = FIBER_TILE;
+  const t = c.getContext('2d');
+  if (!t) return c;
+  const r = rng(seed);
+  t.lineCap = 'round';
+  // 타일 경계에서 이어지도록 3x3 위치에 반복해 그림
+  for (let i = 0; i < count; i++) {
+    const x = r() * FIBER_TILE;
+    const y = r() * FIBER_TILE;
+    const len = 3 + r() * 9;
+    const a = r() * Math.PI * 2;
+    const light = r() > 0.5;
+    t.strokeStyle = light ? `rgba(255,255,255,${lightA * (0.5 + r())})` : `rgba(70,50,35,${darkA * (0.5 + r())})`;
+    t.lineWidth = 0.5 + r() * 0.9;
+    t.beginPath();
+    for (const ox of [-FIBER_TILE, 0, FIBER_TILE]) {
+      for (const oy of [-FIBER_TILE, 0, FIBER_TILE]) {
+        const sx = x + ox;
+        const sy = y + oy;
+        if (sx < -14 || sy < -14 || sx > FIBER_TILE + 14 || sy > FIBER_TILE + 14) continue;
+        t.moveTo(sx, sy);
+        t.quadraticCurveTo(sx + Math.cos(a + 0.6) * len * 0.5, sy + Math.sin(a + 0.6) * len * 0.5, sx + Math.cos(a) * len, sy + Math.sin(a) * len);
+      }
+    }
+    t.stroke();
+  }
+  return c;
+}
+
+function fiberPattern(ctx: CanvasRenderingContext2D, fine = false): CanvasPattern | null {
+  if (fine) fiberTileFine ??= makeFiberTile(7331, 520, 0.2, 0.1);
+  else fiberTile ??= makeFiberTile(1337, 900, 0.17, 0.08);
+  return ctx.createPattern(fine ? fiberTileFine! : fiberTile!, 'repeat');
+}
+
+/** 클립된 영역에 섬유 패턴을 채운다 (offset/회전으로 반복감 완화) */
+export function fillFibers(ctx: CanvasRenderingContext2D, box: Box, seed: number, density = 1, fine = false): void {
+  const pat = fiberPattern(ctx, fine);
+  if (!pat) return;
+  const r = rng(seed);
+  const unit = ctx.canvas.width / 512;
+  const layers = density > 1.15 ? 2 : 1;
+  for (let k = 0; k < layers; k++) {
+    ctx.save();
+    ctx.globalAlpha *= Math.min(1, density / layers + 0.15);
+    ctx.translate(box.x + box.w / 2, box.y + box.h / 2);
+    ctx.rotate(r() * Math.PI * 2);
+    ctx.scale(unit, unit);
+    ctx.translate(r() * FIBER_TILE, r() * FIBER_TILE);
+    ctx.fillStyle = pat;
+    const R = (Math.max(box.w, box.h) / unit) * 0.75 + FIBER_TILE;
+    ctx.fillRect(-R - FIBER_TILE, -R - FIBER_TILE, R * 2 + FIBER_TILE, R * 2 + FIBER_TILE);
+    ctx.restore();
+  }
+}
+
+/** 저해상도 오프스크린에서 흐린 그림자를 만들어 확대해 붙인다 (shadowBlur 비용 1/16) */
+function softShadow(ctx: CanvasRenderingContext2D, path: Path2D, size: number, strength: number): void {
+  const cw = ctx.canvas.width;
+  const ch = ctx.canvas.height;
+  const k = 0.25;
+  const sc = document.createElement('canvas');
+  sc.width = Math.max(1, Math.ceil(cw * k));
+  sc.height = Math.max(1, Math.ceil(ch * k));
+  const s = sc.getContext('2d');
+  if (!s) return;
+  const far = cw * 4;
+  s.setTransform(k, 0, 0, k, 0, 0);
+  // 현재 변환 반영
+  const m = ctx.getTransform();
+  s.transform(m.a, m.b, m.c, m.d, m.e - far, m.f);
+  s.shadowColor = `rgba(60,45,30,${0.28 * strength})`;
+  s.shadowBlur = size * 0.06 * k * Math.hypot(m.a, m.b);
+  s.shadowOffsetX = (far + size * 0.02 * m.a) * k;
+  s.shadowOffsetY = size * 0.035 * k * m.d;
+  s.fillStyle = '#000';
+  s.fill(path);
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(sc, 0, 0, cw, ch);
+  ctx.restore();
+}
+
 /**
  * 펠트 덩어리 하나를 그린다: 부드러운 그림자 → 좌상단 광원 그라디언트 →
- * 섬유 노이즈 → 가장자리 보풀 → (선택) 바느질.
+ * 섬유 노이즈(패턴) → 가장자리 보풀 → (선택) 바느질.
  */
 export function felt(ctx: CanvasRenderingContext2D, path: Path2D, color: string, o: FeltOptions): void {
   const { box } = o;
   const size = Math.max(box.w, box.h);
-  const r = rng(o.seed ?? seedOf(color + box.x + box.y));
+  const seed = o.seed ?? seedOf(color + box.x + box.y);
   const unit = ctx.canvas.width / 512;
 
   // 1) 그림자 (오른쪽 아래)
   const sh = o.shadow ?? 1;
-  if (sh > 0) {
-    ctx.save();
-    ctx.shadowColor = `rgba(60,45,30,${0.28 * sh})`;
-    ctx.shadowBlur = size * 0.06;
-    ctx.shadowOffsetX = size * 0.02;
-    ctx.shadowOffsetY = size * 0.035;
-    ctx.fillStyle = color;
-    ctx.fill(path);
-    ctx.restore();
-  }
+  if (sh > 0) softShadow(ctx, path, size, sh);
 
   // 2) 바탕 그라디언트 (좌상단 광원)
   const lx = box.x + box.w * 0.3;
@@ -119,30 +202,11 @@ export function felt(ctx: CanvasRenderingContext2D, path: Path2D, color: string,
   ctx.fillStyle = g;
   ctx.fill(path);
 
-  // 3) 섬유 노이즈 (클립 내부)
+  // 3) 섬유 노이즈 + 안쪽 음영 (클립 내부)
   ctx.save();
   ctx.clip(path);
-  const n = Math.round((box.w * box.h) / (unit * unit * 18) * (o.fibers ?? 1));
-  ctx.lineCap = 'round';
-  for (let i = 0; i < n; i++) {
-    const x = box.x + r() * box.w;
-    const y = box.y + r() * box.h;
-    const len = (3 + r() * 9) * unit;
-    const a = r() * Math.PI * 2;
-    const light = r() > 0.5;
-    ctx.strokeStyle = light ? `rgba(255,255,255,${0.12 + r() * 0.22})` : `rgba(70,50,35,${0.05 + r() * 0.1})`;
-    ctx.lineWidth = (0.5 + r() * 0.9) * unit;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.quadraticCurveTo(
-      x + Math.cos(a + 0.6) * len * 0.5,
-      y + Math.sin(a + 0.6) * len * 0.5,
-      x + Math.cos(a) * len,
-      y + Math.sin(a) * len,
-    );
-    ctx.stroke();
-  }
-  // 가장자리 안쪽 음영 (오른쪽 아래 어둡게)
+  const fib = o.fibers ?? 1;
+  if (fib > 0) fillFibers(ctx, box, seed, fib);
   const rim = ctx.createLinearGradient(box.x, box.y, box.x + box.w, box.y + box.h);
   rim.addColorStop(0, 'rgba(255,255,255,0.10)');
   rim.addColorStop(0.55, 'rgba(255,255,255,0)');
@@ -151,16 +215,18 @@ export function felt(ctx: CanvasRenderingContext2D, path: Path2D, color: string,
   ctx.fillRect(box.x, box.y, box.w, box.h);
   ctx.restore();
 
-  // 4) 가장자리 보풀
+  // 4) 가장자리 보풀: 섬유 패턴으로 테두리를 한 번 굵게 stroke (점선 반복 제거)
   const fz = o.fuzz ?? 1;
   if (fz > 0) {
+    const pat = fiberPattern(ctx, true);
     ctx.save();
-    for (let k = 0; k < 3; k++) {
-      ctx.setLineDash([(1 + r() * 2) * unit, (2 + r() * 4) * unit]);
-      ctx.lineDashOffset = r() * 10;
-      ctx.lineWidth = (1.2 + r() * 1.4) * unit * fz;
-      ctx.strokeStyle = k === 0 ? rgba(PAL.wool, 0.35) : `rgba(${k === 1 ? '255,255,255' : '90,70,50'},${k === 1 ? 0.25 : 0.12})`;
-      ctx.translate((r() - 0.5) * 1.5 * unit, (r() - 0.5) * 1.5 * unit);
+    ctx.lineWidth = 3.2 * unit * fz;
+    ctx.strokeStyle = rgba(PAL.wool, 0.22);
+    ctx.stroke(path);
+    if (pat) {
+      ctx.strokeStyle = pat;
+      ctx.lineWidth = 5 * unit * fz;
+      ctx.globalAlpha *= 0.9;
       ctx.stroke(path);
     }
     ctx.restore();

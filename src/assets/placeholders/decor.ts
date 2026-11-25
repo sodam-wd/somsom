@@ -2,7 +2,7 @@
 // 각 에셋은 정사각 프레임 중앙 정렬, 투명 배경, 글자 없음.
 import type { PlaceholderDrawer } from './index';
 import {
-  PAL, blob, button, circle, ellipse, felt, heart, knitRibs, rgba, rng, roundRect,
+  PAL, blob, button, circle, ellipse, felt, fillFibers, heart, knitRibs, rgba, rng, roundRect,
   seedOf, shade, star, stitch, woodGrain, woolDot, yarn,
 } from './felt';
 import { BASE_GEOMETRY, GLASS_HIGHLIGHT, glassInteriorPath } from './geometry';
@@ -817,7 +817,6 @@ const groundSnow: D = (ctx, w) => {
   }
 };
 const textureWool: D = (ctx, w) => {
-  const r = rng(seedOf('wool-face'));
   const p = circle(w / 2, w / 2, w * 0.46);
   ctx.save();
   ctx.clip(p);
@@ -827,19 +826,7 @@ const textureWool: D = (ctx, w) => {
   g.addColorStop(1, 'rgba(229,218,203,0)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, w);
-  ctx.lineCap = 'round';
-  for (let i = 0; i < 3500; i++) {
-    const x = r() * w;
-    const y = r() * w;
-    const len = (3 + r() * 10) * (w / 512);
-    const a = r() * Math.PI * 2;
-    ctx.strokeStyle = r() > 0.4 ? `rgba(255,255,255,${0.15 + r() * 0.3})` : `rgba(120,99,79,${0.06 + r() * 0.1})`;
-    ctx.lineWidth = (0.5 + r()) * (w / 512);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.quadraticCurveTo(x + Math.cos(a + 0.7) * len * 0.5, y + Math.sin(a + 0.7) * len * 0.5, x + Math.cos(a) * len, y + Math.sin(a) * len);
-    ctx.stroke();
-  }
+  fillFibers(ctx, bx(0, 0, w, w), seedOf('wool-face'), 2);
   ctx.restore();
 };
 
