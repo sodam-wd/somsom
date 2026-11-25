@@ -4,6 +4,7 @@ import { useEffect, useRef, type DragEvent, type PointerEvent as ReactPointerEve
 import { LOGICAL_SIZE, type Layer, type LayerTarget } from '../types/scene';
 import type { EditorCanvasProps } from '../types/contracts';
 import { subscribeAssets } from '../assets/loader';
+import { ASSETS_BY_ID } from '../assets/manifest';
 import { renderLayers } from '../render/layers';
 import { getLayerImage, getLayerSize, isOpaqueAt, subscribeRenderCache } from '../render/images';
 import {
@@ -23,6 +24,19 @@ import { TAP_SLOP, angleDeg, distance, pinchDelta, snapAngle } from './gestures'
 
 /** 드래그 앤 드롭 dataTransfer 타입 (값 = assetId) */
 export const ASSET_DRAG_TYPE = 'text/somsom-asset';
+/** workshop-ui 재료 타일이 쓰는 타입 (동일하게 허용) */
+export const ASSET_DRAG_TYPE_ALT = 'application/x-somsom-asset';
+const DRAG_TYPES = [ASSET_DRAG_TYPE, ASSET_DRAG_TYPE_ALT];
+
+/** dataTransfer 에서 assetId 추출. text/plain 은 manifest 에 있는 id 일 때만 허용. */
+function readDragAsset(dt: DataTransfer): string | null {
+  for (const t of DRAG_TYPES) {
+    const v = dt.getData(t).trim();
+    if (v) return v;
+  }
+  const plain = dt.getData('text/plain').trim();
+  return plain && ASSETS_BY_ID[plain] ? plain : null;
+}
 
 const MAX_DPR = 2;
 /** 핸들 터치 반경 (CSS px) → 지름 44px */
@@ -419,7 +433,9 @@ export function EditorCanvas(props: EditorCanvasProps) {
   // ── 드롭 ────────────────────────────────────────────────
   const onDragOver = (e: DragEvent<HTMLCanvasElement>) => {
     if (!propsRef.current.onDropAsset) return;
-    if (Array.from(e.dataTransfer.types).includes(ASSET_DRAG_TYPE)) {
+    const types = Array.from(e.dataTransfer.types);
+    // dragover 중에는 값을 읽을 수 없으므로 타입으로만 판단 (text/plain 은 drop 시 검증)
+    if (types.some((t) => DRAG_TYPES.includes(t) || t === 'text/plain')) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
     }
@@ -427,7 +443,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const onDrop = (e: DragEvent<HTMLCanvasElement>) => {
     const cb = propsRef.current.onDropAsset;
     if (!cb) return;
-    const id = e.dataTransfer.getData(ASSET_DRAG_TYPE);
+    const id = readDragAsset(e.dataTransfer);
     if (!id) return;
     e.preventDefault();
     const L = toLogical(cssPoint(e));

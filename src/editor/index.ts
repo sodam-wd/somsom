@@ -1,7 +1,7 @@
 // editor-engine 소유 (T1). 계약: src/types/contracts.ts
 export { sceneStore, useEditor } from './useEditor';
 export { findLayer, createSceneStore, normalizeHex, HISTORY_LIMIT } from './store';
-export { EditorCanvas, ASSET_DRAG_TYPE } from './EditorCanvas';
+export { EditorCanvas, ASSET_DRAG_TYPE, ASSET_DRAG_TYPE_ALT } from './EditorCanvas';
 export { RollCanvas } from './RollCanvas';
 export { useViewControls, viewStore, type ViewControls } from './view';
 export {
