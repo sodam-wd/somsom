@@ -359,8 +359,8 @@ export function StudioStage({ mode, className, onCapture, onRequestMode }: Studi
           <img src={shot.url} alt="촬영한 작품 사진" className={eff === 'clear' ? 'st-shot__img st-shot__img--clear' : 'st-shot__img'} />
           {shotMsg && <p className="st-hint" role="status">{shotMsg}</p>}
           <div className="st-row">
-            <button type="button" className="st-btn" onClick={() => void saveShot()}>
-              저장·공유
+            <button type="button" className={onCapture ? 'st-btn st-btn--ghost' : 'st-btn'} onClick={() => void saveShot()}>
+              {onCapture ? '한 번 더 저장·공유' : '저장·공유'}
             </button>
             <button type="button" className="st-btn st-btn--ghost" onClick={() => setShot(null)}>
               다시 찍기

@@ -28,22 +28,32 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 /** 임시 에셋 해상도 (실제 목표 1024 대비 축소하여 메모리 절약) */
 const PLACEHOLDER_SCALE = 0.5;
 
-function makePlaceholder(entry: AssetEntry): LoadedAsset {
-  const w = Math.round(entry.width * PLACEHOLDER_SCALE);
-  const h = Math.round(entry.height * PLACEHOLDER_SCALE);
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (ctx) drawPlaceholder(entry, ctx, w, h);
-  return {
-    id: entry.id,
-    image: canvas,
-    width: w,
-    height: h,
-    isPlaceholder: true,
-    url: canvas.toDataURL('image/png'),
-  };
+/** 임시 에셋 생성을 한 번에 하나씩, 프레임 사이에 나눠 실행해 메인 스레드 장시간 점유를 막는다. */
+let placeholderQueue: Promise<unknown> = Promise.resolve();
+const nextTick = () => new Promise<void>((r) => setTimeout(r, 0));
+
+function canvasUrl(canvas: HTMLCanvasElement): Promise<string> {
+  return new Promise((resolve) => {
+    if (!canvas.toBlob) return resolve(canvas.toDataURL('image/png'));
+    canvas.toBlob((blob) => resolve(blob ? URL.createObjectURL(blob) : canvas.toDataURL('image/png')), 'image/png');
+  });
+}
+
+function makePlaceholder(entry: AssetEntry): Promise<LoadedAsset> {
+  const job = placeholderQueue.then(async () => {
+    await nextTick();
+    const w = Math.round(entry.width * PLACEHOLDER_SCALE);
+    const h = Math.round(entry.height * PLACEHOLDER_SCALE);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (ctx) drawPlaceholder(entry, ctx, w, h);
+    const url = await canvasUrl(canvas);
+    return { id: entry.id, image: canvas, width: w, height: h, isPlaceholder: true, url } satisfies LoadedAsset;
+  });
+  placeholderQueue = job.catch(() => undefined);
+  return job;
 }
 
 export function loadAsset(id: string): Promise<LoadedAsset> {
