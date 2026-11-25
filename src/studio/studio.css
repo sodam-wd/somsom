@@ -1,0 +1,144 @@
+/* studio-qa 소유 (T3). studio 컴포넌트 전용 스타일 — st- 접두사. 토큰은 src/styles 의 :root 변수 사용. */
+.st-photo-adjust, .st-bg-editor, .st-stage {
+  --st-cream: var(--cream, #F5F0E6);
+  --st-wool: var(--wool, #FEFCF7);
+  --st-oat: var(--oat, #E5DACB);
+  --st-oak: var(--oak, #91765E);
+  --st-sage: var(--sage, #AAB8A0);
+  --st-berry: var(--berry, #BD716B);
+  --st-cocoa: var(--cocoa, #78634F);
+  color: var(--st-cocoa);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.st-title { margin: 0; font-size: 1rem; font-weight: 600; }
+.st-hint, .st-muted { margin: 0; font-size: 0.8125rem; opacity: 0.85; }
+.st-error { margin: 0; color: #8f3f3a; font-size: 0.875rem; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.st-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.st-btn {
+  min-height: 44px; min-width: 44px; padding: 0 16px;
+  border-radius: 22px; border: 1px solid var(--st-oak);
+  background: var(--st-oak); color: var(--st-wool);
+  font: inherit; font-size: 0.9375rem; cursor: pointer;
+}
+.st-btn--ghost { background: var(--st-wool); color: var(--st-cocoa); border-color: var(--st-oat); }
+.st-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.st-btn:focus-visible, .st-thumb:focus-visible, .st-shutter:focus-visible,
+.st-stage__view:focus-visible, .st-crop__rect:focus-visible, .st-slider input:focus-visible {
+  outline: 3px solid var(--st-sage); outline-offset: 2px;
+}
+
+.st-check { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 0.9375rem; }
+.st-check input { width: 22px; height: 22px; accent-color: var(--st-oak); }
+
+.st-tag {
+  display: inline-block; margin: 0; padding: 2px 8px; border-radius: 10px;
+  font-size: 0.6875rem; background: var(--st-oat); color: var(--st-cocoa);
+}
+.st-tag--warn { background: #F3DCD6; color: #8f3f3a; }
+
+/* 슬라이더 */
+.st-sliders { display: grid; gap: 4px; }
+.st-slider { display: grid; gap: 2px; }
+.st-slider__label { display: flex; justify-content: space-between; font-size: 0.875rem; }
+.st-slider__value { font-variant-numeric: tabular-nums; opacity: 0.8; }
+.st-slider input[type="range"] { width: 100%; min-height: 44px; margin: 0; accent-color: var(--st-oak); touch-action: pan-y; }
+
+/* crop */
+.st-crop {
+  position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden;
+  border-radius: 12px; background: var(--st-oat);
+  touch-action: none; user-select: none; -webkit-user-select: none; overscroll-behavior: contain;
+}
+.st-crop > p { position: absolute; inset: 0; display: grid; place-items: center; }
+.st-crop__img { position: absolute; pointer-events: none; }
+.st-crop__rect {
+  position: absolute; box-sizing: border-box; cursor: move;
+  border: 2px solid var(--st-wool);
+  box-shadow: 0 0 0 9999px rgba(60, 45, 32, 0.45);
+  border-radius: 2px;
+}
+.st-crop__rect::after { /* 얼굴 마스크 가이드 */
+  content: ""; position: absolute; inset: 8%; border-radius: 50%;
+  border: 1px dashed rgba(254, 252, 247, 0.8); pointer-events: none;
+}
+.st-crop__handle {
+  position: absolute; width: 44px; height: 44px; margin: -22px; touch-action: none;
+}
+.st-crop__handle::before {
+  content: ""; position: absolute; left: 14px; top: 14px; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--st-wool); border: 2px solid var(--st-oak);
+}
+.st-crop__handle--nw { left: 0; top: 0; cursor: nwse-resize; }
+.st-crop__handle--ne { left: 100%; top: 0; cursor: nesw-resize; }
+.st-crop__handle--sw { left: 0; top: 100%; cursor: nesw-resize; }
+.st-crop__handle--se { left: 100%; top: 100%; cursor: nwse-resize; }
+
+.st-photo-preview { margin: 0; display: grid; justify-items: center; gap: 4px; }
+.st-photo-preview canvas { width: min(240px, 100%); aspect-ratio: 1; border-radius: 12px; background: var(--st-wool); }
+.st-photo-preview figcaption { font-size: 0.75rem; opacity: 0.8; }
+
+/* 배경 */
+.st-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.st-thumb {
+  display: grid; gap: 4px; padding: 6px; min-height: 44px;
+  border-radius: 12px; border: 2px solid transparent; background: var(--st-wool);
+  color: inherit; font: inherit; cursor: pointer; text-align: left;
+}
+.st-thumb[aria-pressed="true"] { border-color: var(--st-oak); }
+.st-thumb:disabled { opacity: 0.6; }
+.st-thumb__img { display: block; aspect-ratio: 3 / 2; border-radius: 8px; background: var(--st-oat) center / cover no-repeat; }
+.st-thumb--none .st-thumb__img { background: repeating-linear-gradient(135deg, var(--st-wool) 0 6px, var(--st-oat) 6px 7px); }
+.st-thumb__label { font-size: 0.8125rem; }
+.st-thumb__tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.st-bg-preview {
+  position: relative; width: 100%; overflow: hidden; border-radius: 12px; background: var(--st-oat);
+  touch-action: none; overscroll-behavior: contain;
+}
+.st-bg-preview canvas { display: block; width: 100%; height: 100%; }
+.st-bg-preview__empty { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.875rem; }
+.st-bg-preview__tag { position: absolute; right: 8px; top: 8px; }
+
+/* 촬영 무대 */
+.st-stage { position: relative; }
+.st-stage__view {
+  position: relative; width: 100%; aspect-ratio: 3 / 4; max-height: 70vh; max-height: 70dvh;
+  margin: 0 auto; overflow: hidden; border-radius: 14px; background: var(--st-oat);
+  touch-action: none; user-select: none; -webkit-user-select: none; overscroll-behavior: contain;
+}
+@media (min-width: 768px) { .st-stage__view { aspect-ratio: 4 / 3; } }
+.st-stage--live .st-stage__view { background: #2b241e; }
+.st-stage--clear .st-stage__view { background: var(--st-wool); }
+.st-stage__video, .st-stage__canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.st-stage__video { object-fit: cover; }
+.st-stage__note { position: absolute; left: 0; right: 0; bottom: 12px; margin: 0; text-align: center; font-size: 0.875rem; }
+.st-stage__overlay {
+  position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px;
+  padding: 16px; text-align: center; background: rgba(245, 240, 230, 0.86);
+}
+.st-stage__overlay p { margin: 0; max-width: 32ch; }
+.st-stage__notes { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.st-stage__controls { display: grid; gap: 8px; }
+.st-row--main { justify-content: center; }
+
+.st-shutter {
+  width: 64px; height: 64px; border-radius: 50%; padding: 5px; cursor: pointer;
+  border: 3px solid var(--st-oak); background: var(--st-wool);
+}
+.st-shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--st-berry); }
+.st-shutter:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.st-shot {
+  position: absolute; inset: 0; z-index: 2; display: grid; align-content: center; justify-items: center; gap: 12px;
+  padding: 16px; background: rgba(245, 240, 230, 0.97); border-radius: 14px;
+}
+.st-shot__img { max-width: 100%; max-height: 60vh; border-radius: 10px; box-shadow: 0 6px 24px rgba(60, 45, 32, 0.2); }
+.st-shot__img--clear { background: var(--st-oat); }
+
+@media (prefers-reduced-motion: reduce) {
+  .st-photo-adjust *, .st-bg-editor *, .st-stage * { transition: none !important; animation: none !important; }
+}

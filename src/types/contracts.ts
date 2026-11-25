@@ -154,6 +154,8 @@ export interface StudioStageProps {
   className?: string;
   /** 촬영 결과 PNG */
   onCapture?: (blob: Blob) => void;
+  /** 내부에서 모드 전환을 요청할 때 (예: live 실패 → '사진으로 대신하기' → 'photo') */
+  onRequestMode?: (mode: StudioMode) => void;
 }
 
 export type { Result };
