@@ -6,7 +6,7 @@ export const BODY_ASSET_IDS = ['A001', 'A002', 'A003'] as const;
 export type BodyAssetId = (typeof BODY_ASSET_IDS)[number];
 
 /** 눈덩이 반지름 범위 (논리 단위) */
-export const ROLL_MIN_RADIUS = 40;
+export const ROLL_MIN_RADIUS = 70;
 export const ROLL_MAX_RADIUS = 220;
 /** 성장 속도 상수: 이 거리만큼 굴리면 최대치의 약 63% 도달 */
 export const ROLL_GROWTH_DISTANCE = 1800;
