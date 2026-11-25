@@ -1,0 +1,3 @@
+/* workshop-ui 소유 (T2에서 구현) */
+:root { --cream:#F5F0E6; --wool:#FEFCF7; --oat:#E5DACB; --oak:#91765E; --sage:#AAB8A0; --snow:#BDD5DF; --berry:#BD716B; --cocoa:#78634F; }
+html,body,#root{margin:0;height:100%;background:var(--cream);color:var(--cocoa);}

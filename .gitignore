@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.local
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+coverage/
+.vite/
+# 내부 문서/참고 자료는 저장소 밖에서 관리
+planning/
+reference/
+.claude/
+CLAUDE.md
