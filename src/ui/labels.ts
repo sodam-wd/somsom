@@ -3,7 +3,7 @@ import type { Stage } from '../types/scene';
 
 export const STAGE_LABELS: Record<Stage, { short: string; title: string; hint: string }> = {
   welcome: { short: '시작', title: '공방에 오신 걸 환영해요', hint: '로고와 작품을 둘러보고 만들기를 시작해요.' },
-  roll: { short: '굴리기', title: '눈덩이 굴리기', hint: '작업대 위를 드래그해 눈덩이를 키우고, 손을 떼면 바로 추가돼요.' },
+  roll: { short: '굴리기', title: '눈덩이 굴리기', hint: '끌어서 굴리면 눈덩이가 커져요. 원하는 크기에서 ‘바로 추가’를 눌러요.' },
   dress: { short: '꾸미기', title: '재료 서랍에서 꾸미기', hint: '재료를 탭하거나 끌어다 놓고, 선택한 부품을 조절해요.' },
   build: { short: '스노우볼', title: '스노우볼 짓기', hint: '유리 용기와 받침대를 고르고 겨울 풍경을 배치해요.' },
   born: { short: '탄생', title: '탄생 증명서', hint: '이름과 성격을 적어 눈사람을 탄생시켜요.' },

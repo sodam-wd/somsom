@@ -83,7 +83,7 @@ export function Keep() {
         </div>
         <p className="hint keep__mode-desc">{MODES.find((m) => m.id === mode)?.desc}</p>
         <div className="keep__studio">
-          <StudioStage mode={mode} className="studio-stage" onCapture={(b) => void onCapture(b)} />
+          <StudioStage mode={mode} className="studio-stage" onCapture={(b) => void onCapture(b)} onRequestMode={setMode} />
         </div>
       </section>
 

@@ -82,17 +82,18 @@
 .st-photo-preview figcaption { font-size: 0.75rem; opacity: 0.8; }
 
 /* 배경 */
-.st-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.st-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(96px, 100%), 1fr)); gap: 8px; min-width: 0; }
 .st-thumb {
   display: grid; gap: 4px; padding: 6px; min-height: 44px;
   border-radius: 12px; border: 2px solid transparent; background: var(--st-wool);
   color: inherit; font: inherit; cursor: pointer; text-align: left;
+  min-width: 0; box-sizing: border-box; overflow: hidden;
 }
 .st-thumb[aria-pressed="true"] { border-color: var(--st-oak); }
 .st-thumb:disabled { opacity: 0.6; }
 .st-thumb__img { display: block; aspect-ratio: 3 / 2; border-radius: 8px; background: var(--st-oat) center / cover no-repeat; }
 .st-thumb--none .st-thumb__img { background: repeating-linear-gradient(135deg, var(--st-wool) 0 6px, var(--st-oat) 6px 7px); }
-.st-thumb__label { font-size: 0.8125rem; }
+.st-thumb__label { font-size: 0.8125rem; min-width: 0; overflow-wrap: anywhere; }
 .st-thumb__tags { display: flex; gap: 4px; flex-wrap: wrap; }
 
 .st-bg-preview {

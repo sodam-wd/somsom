@@ -797,11 +797,23 @@ const base = (color: string, seed: number): D => (ctx, w, h) => {
 
 // ── ground / texture ─────────────────────────────────────────
 const groundSnow: D = (ctx, w) => {
-  const p = blob(w / 2, w * 0.55, w * 0.46, w * 0.16, 0.06, 260, 18);
-  felt(ctx, p, PAL.wool, { box: bx(w * 0.04, w * 0.39, w * 0.92, w * 0.32), seed: 260, fibers: 1.5, fuzz: 1.6, shadow: 0.5 });
-  for (let i = 0; i < 3; i++) {
-    const x = w * (0.28 + i * 0.22);
-    felt(ctx, blob(x, w * 0.5, w * 0.12, w * 0.06, 0.1, 261 + i, 10), PAL.wool, { box: bx(x - w * 0.12, w * 0.44, w * 0.24, w * 0.12), seed: 261 + i, shadow: 0.25, fuzz: 1.4 });
+  // render 기준: 정사각 위쪽 약 28%만 유리 안에 보임 → 눈 표면 윗선을 위 12~20%에 두고 아래로 가득 채움
+  const r = rng(260);
+  const p = new Path2D();
+  p.moveTo(0, w * 0.2);
+  const n = 8;
+  for (let i = 0; i <= n; i++) {
+    const x = (i / n) * w;
+    const y = w * (0.14 + r() * 0.06);
+    p.quadraticCurveTo(x - w / n / 2, y - w * 0.03, x, y);
+  }
+  p.lineTo(w, w);
+  p.lineTo(0, w);
+  p.closePath();
+  felt(ctx, p, PAL.wool, { box: bx(0, w * 0.1, w, w * 0.9), seed: 260, fibers: 1.3, fuzz: 1.4, shadow: 0.3 });
+  for (let i = 0; i < 4; i++) {
+    const x = w * (0.14 + i * 0.24);
+    felt(ctx, blob(x, w * 0.19, w * 0.11, w * 0.045, 0.1, 261 + i, 10), PAL.wool, { box: bx(x - w * 0.11, w * 0.15, w * 0.22, w * 0.09), seed: 261 + i, shadow: 0.2, fuzz: 1.3 });
   }
 };
 const textureWool: D = (ctx, w) => {

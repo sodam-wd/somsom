@@ -1,8 +1,8 @@
 // workshop-ui 소유 (T2): 6단계 공방 앱 셸. Welcome → Roll → Dress → Build → Born → Keep.
 // 언제든 이전 단계로 이동 가능하며 편집 상태는 sceneStore 에 보존된다.
+// 단축키(Ctrl+Z 등)는 EditorCanvas/RollCanvas 가 처리하므로 앱 전체 단축키는 두지 않는다(중복 실행 방지).
 import { useEffect, useRef, useState } from 'react';
-import type { Stage } from '../types/scene';
-import { engineReady, sceneStore, useEditor } from './engine';
+import { engineReady, useEditor } from './engine';
 import { MaterialVars, useVisualViewportVars } from './hooks';
 import { STAGE_LABELS } from './labels';
 import { hasWork } from './workFile';
@@ -15,51 +15,6 @@ import { Dress } from './stages/Dress';
 import { Build } from './stages/Build';
 import { Born } from './stages/Born';
 import { Keep } from './stages/Keep';
-
-function isTyping(t: EventTarget | null): boolean {
-  const el = t as HTMLElement | null;
-  if (!el) return false;
-  if (el.isContentEditable) return true;
-  const tag = el.tagName;
-  if (tag === 'TEXTAREA' || tag === 'SELECT') return true;
-  if (tag === 'INPUT') {
-    const type = (el as HTMLInputElement).type;
-    return !['range', 'checkbox', 'radio', 'button', 'color', 'file'].includes(type);
-  }
-  return false;
-}
-
-function useShortcuts(stage: Stage) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || isTyping(e.target)) return;
-      const mod = e.ctrlKey || e.metaKey;
-      const k = e.key.toLowerCase();
-      if (mod && k === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) sceneStore.redo();
-        else sceneStore.undo();
-        return;
-      }
-      if (mod && k === 'y') {
-        e.preventDefault();
-        sceneStore.redo();
-        return;
-      }
-      if (stage !== 'dress' && stage !== 'build') return;
-      const sel = sceneStore.getState().selectedId;
-      if (!sel) return;
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        sceneStore.removeLayer(sel);
-      } else if (e.key === 'Escape') {
-        sceneStore.select(null);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [stage]);
-}
 
 /** 새로고침/닫기 시 작업 손실 안내 (자동 저장은 P1) */
 function useUnloadGuard() {
@@ -82,7 +37,6 @@ export function WorkshopApp() {
   const heading = useRef<HTMLHeadingElement>(null);
   const first = useRef(true);
   useVisualViewportVars();
-  useShortcuts(stage);
   useUnloadGuard();
 
   useEffect(() => {

@@ -21,7 +21,7 @@ export function Roll() {
         </div>
         {bodies === 0 && (
           <p className="canvas-empty" aria-hidden="true">
-            작업대를 꾹 누른 채 굴려 보세요
+            끌어서 굴리면 커져요 · 원하는 크기에서 ‘바로 추가’
           </p>
         )}
       </div>
@@ -29,8 +29,8 @@ export function Roll() {
         <h2 className="stitch-title">눈덩이 굴리기</h2>
         <ol className="steps">
           <li>작업대 위를 누른 채 이리저리 끌면 눈덩이가 커져요.</li>
-          <li>손을 떼면 눈덩이가 바로 추가되고 위로 쌓여요.</li>
-          <li>드래그가 어렵다면 모양을 고르고 ‘바로 추가’를 눌러요.</li>
+          <li>여러 번 끊어서 굴려도 계속 커져요. 점선 원은 추가될 자리예요.</li>
+          <li>원하는 크기가 되면 ‘바로 추가’를 눌러요. (캔버스 선택 후 Enter도 돼요)</li>
           <li>크기는 다음 단계에서 언제든 다시 조절할 수 있어요.</li>
         </ol>
         <p className="roll__count" aria-live="polite">
