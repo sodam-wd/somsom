@@ -9,6 +9,7 @@ import { OpenWorkButton, hasWork } from '../workFile';
 export function Welcome({ onOpenAssets }: { onOpenAssets: () => void }) {
   // B01 은 확정 원본(실제 파일) → 로더/임시 생성 대기 없이 바로 표시
   const [logoFailed, setLogoFailed] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
   const scene = useEditor((s) => s.scene);
   const resume = hasWork(scene);
 
@@ -34,9 +35,16 @@ export function Welcome({ onOpenAssets }: { onOpenAssets: () => void }) {
             height={1024}
             decoding="async"
             fetchPriority="high"
+            onLoad={() => setLogoLoaded(true)}
             onError={() => setLogoFailed(true)}
             alt="somsom Little Winter — 유리 돔 안의 양모 펠트 눈사람 로고"
           />
+        )}
+        {!logoFailed && !logoLoaded && (
+          <div className="welcome__logo-loading" role="status">
+            <span className="spinner" aria-hidden="true" />
+            로고를 불러오는 중…
+          </div>
         )}
       </div>
       <div className="welcome__panel">

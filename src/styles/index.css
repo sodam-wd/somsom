@@ -493,8 +493,20 @@ legend { display: flex; align-items: center; gap: 6px; font-weight: 700; margin-
   border: 12px solid #A88A6C;
   border-image: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35) inset, 0 18px 40px rgba(50, 35, 20, 0.35);
-  background: var(--oat);
+  background: var(--cream);
 }
+.welcome__logo-loading {
+  position: absolute; inset: 12px; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  background: var(--cream) var(--mat-linen) repeat; background-size: 512px;
+  color: var(--ink-soft); font-weight: 600;
+}
+.spinner {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px dashed var(--oak); animation: spin 1.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1023.98px) { .welcome__logo-loading { inset: 8px; } }
 .welcome__logo--loading { display: grid; place-items: center; color: var(--ink-soft); font-family: var(--font-latin); font-size: 1.6rem; }
 .welcome__panel { display: grid; gap: 16px; padding: 28px; }
 .welcome__eyebrow { font-family: var(--font-latin); font-size: 1.1rem; color: var(--cocoa); letter-spacing: 0.04em; }
