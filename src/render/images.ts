@@ -177,12 +177,20 @@ export function ensureBackgroundCanvas(photo: Photo): Promise<HTMLCanvasElement 
   return entry.promise;
 }
 
+// ── 출력용 고해상도 사진 (출력 렌더 동안만 적용) ─────────────
+let photoOverrides: Map<Photo, HTMLCanvasElement> | null = null;
+
+/** 출력 그리기 동안 사용할 사진 렌더 결과를 지정 (null = 해제). 동기 그리기 구간에서만 사용. */
+export function setPhotoOverrides(map: Map<Photo, HTMLCanvasElement> | null) {
+  photoOverrides = map;
+}
+
 // ── 레이어 이미지 해석 ─────────────────────────────────────
 /** 레이어를 그릴 이미지 (tint/사진 반영). 아직 로딩 중이면 null. */
 export function getLayerImage(layer: Layer): SizedImage | null {
   if (layer.assetId === PHOTO_ASSET_ID) {
     if (!layer.photo) return null;
-    const c = getPhotoCanvas(layer.photo);
+    const c = photoOverrides?.get(layer.photo) ?? getPhotoCanvas(layer.photo);
     return c ? { image: c, width: c.width, height: c.height } : null;
   }
   const asset = getLoadedAsset(layer.assetId);

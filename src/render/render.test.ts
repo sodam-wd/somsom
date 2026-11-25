@@ -4,7 +4,7 @@ import { parseScene, serializeScene } from './sceneio';
 import { adjustPixels, ellipseMaskAlpha, hexToRgb, luminance, seededRandom, tintPixels } from './pixels';
 import { createFlakes, floatingFlakesAt, shakeFlakes, stepFlakes } from './particles';
 import { SNOW_FLOOR_Y } from './globe';
-import { formatBirthDate, wrapText } from './output';
+import { MAX_PHOTO_OUTPUT, formatBirthDate, photoOutputSize, wrapText } from './output';
 
 function sampleScene(): Scene {
   const s = createDefaultScene();
@@ -173,5 +173,15 @@ describe('certificate text helpers', () => {
   it('formats birth date', () => {
     expect(formatBirthDate('2026-01-05')).toBe('2026년 1월 5일');
     expect(formatBirthDate('')).toBe('');
+  });
+});
+
+describe('photo output size', () => {
+  const base = { id: 'p', assetId: 'photo', x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0, flipX: false, z: 0, tint: null, visible: true };
+  it('scales with output resolution and clamps to 2048', () => {
+    expect(photoOutputSize(base, 1.08)).toBe(216);
+    expect(photoOutputSize({ ...base, scaleX: 2, scaleY: 2 }, 2.048 * 2)).toBe(1639);
+    expect(photoOutputSize({ ...base, scaleX: 8, scaleY: 8 }, 4)).toBe(MAX_PHOTO_OUTPUT);
+    expect(photoOutputSize(base, 0.001)).toBe(16);
   });
 });

@@ -3,13 +3,15 @@ import { loadAsset } from '../assets/loader';
 import type {
   CertificateRenderOptions, GlobeRenderOptions, SnowmanRenderOptions,
 } from '../types/contracts';
-import type { Scene } from '../types/scene';
+import { LAYER_BASE_SIZE, LOGICAL_SIZE, PHOTO_ASSET_ID, type Layer, type Photo, type Scene } from '../types/scene';
 import { fitRect, layersBBox } from '../editor/transforms';
-import { createCanvas, ensureBackgroundCanvas, getLayerSize, prepareLayers } from './images';
-import { drawBackground, drawGlobe, globeAssetIds, globeFit } from './globe';
+import {
+  EDITOR_PHOTO_SIZE, createCanvas, ensureBackgroundCanvas, getLayerSize, prepareLayers, setPhotoOverrides,
+} from './images';
+import { GLOBE_LAYOUT, drawBackground, drawGlobe, globeAssetIds, globeFit, snowmanPlacement } from './globe';
 import { createFlakes, drawFlakes, floatingFlakesAt } from './particles';
 import { renderLayers } from './layers';
-import './photo';
+import { renderPhoto } from './photo';
 
 const MAX_OUTPUT_SIDE = 4096;
 
@@ -23,6 +25,57 @@ async function prepareScene(scene: Scene, extraIds: string[] = []): Promise<void
   for (const bg of [scene.innerBackground, scene.outerBackground]) {
     if (bg.kind === 'photo' && bg.photo) await ensureBackgroundCanvas(bg.photo);
   }
+}
+
+/** 출력 사진 렌더 상한 (px) */
+export const MAX_PHOTO_OUTPUT = 2048;
+
+/** 사진 레이어의 출력 픽셀 크기 (긴 변). pxPerLogical = 출력 px / 레이어 논리 단위. */
+export function photoOutputSize(layer: Layer, pxPerLogical: number): number {
+  const s = LAYER_BASE_SIZE * Math.max(Math.abs(layer.scaleX), Math.abs(layer.scaleY)) * pxPerLogical;
+  return Math.min(MAX_PHOTO_OUTPUT, Math.max(16, Math.ceil(s)));
+}
+
+/**
+ * 출력 해상도에 비례한 사진 렌더. 편집용(512)보다 커야 할 때만 새로 렌더한다.
+ * 같은 사진이 여러 번 쓰이면 가장 큰 크기 하나로 렌더.
+ */
+async function buildPhotoOverrides(groups: [Layer[], number][]): Promise<Map<Photo, HTMLCanvasElement>> {
+  const need = new Map<Photo, number>();
+  for (const [layers, k] of groups) {
+    for (const l of layers) {
+      if (l.assetId !== PHOTO_ASSET_ID || !l.photo || !l.visible) continue;
+      const size = photoOutputSize(l, k);
+      if (size > EDITOR_PHOTO_SIZE) need.set(l.photo, Math.max(need.get(l.photo) ?? 0, size));
+    }
+  }
+  const out = new Map<Photo, HTMLCanvasElement>();
+  await Promise.all([...need].map(async ([photo, size]) => {
+    try {
+      out.set(photo, await renderPhoto(photo, size));
+    } catch {
+      /* 실패 시 편집용 렌더 사용 */
+    }
+  }));
+  return out;
+}
+
+/** 출력 그리기 동안만 고해상도 사진 적용 */
+function withPhotos<T>(map: Map<Photo, HTMLCanvasElement>, draw: () => T): T {
+  setPhotoOverrides(map);
+  try {
+    return draw();
+  } finally {
+    setPhotoOverrides(null);
+  }
+}
+
+/** 눈사람 bbox 를 (w,h) 영역에 맞출 때의 배율 */
+function snowmanFitScale(scene: Scene, w: number, h: number, pad = 0.06): number {
+  const bb = layersBBox(scene.snowman, getLayerSize);
+  if (!bb) return 1;
+  const p = Math.min(w, h) * pad;
+  return fitRect(bb, { x: 0, y: 0, width: w - 2 * p, height: h - 2 * p }).scale;
 }
 
 /** 눈사람만 그린다 (투명 배경, bbox 중앙 배치). ctx 영역 (x,y,w,h). */
@@ -42,11 +95,12 @@ function drawSnowmanFit(ctx: CanvasRenderingContext2D, scene: Scene, x: number, 
 export async function renderSnowman(scene: Scene, opts: SnowmanRenderOptions): Promise<HTMLCanvasElement> {
   const size = sideOf(opts.size, 1080);
   await prepareLayers(scene.snowman);
+  const photos = await buildPhotoOverrides([[scene.snowman, snowmanFitScale(scene, size, size)]]);
   const canvas = createCanvas(size, size);
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.imageSmoothingQuality = 'high';
-    drawSnowmanFit(ctx, scene, 0, 0, size, size);
+    withPhotos(photos, () => drawSnowmanFit(ctx, scene, 0, 0, size, size));
   }
   return canvas;
 }
@@ -78,15 +132,22 @@ export async function renderSnowGlobe(scene: Scene, opts: GlobeRenderOptions): P
   const w = sideOf(opts.width, 1080);
   const h = sideOf(opts.height, 1080);
   await prepareScene(scene);
+  // 출력 px / world 논리 단위
+  const worldK = globeFit(w, h).scale * (GLOBE_LAYOUT.glass.size / LOGICAL_SIZE);
+  const placement = snowmanPlacement(scene.snowman);
+  const photos = await buildPhotoOverrides([
+    [scene.world, worldK],
+    [scene.snowman, worldK * (placement?.scale ?? 1)],
+  ]);
   const canvas = createCanvas(w, h);
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.imageSmoothingQuality = 'high';
     const t = opts.particleTime;
-    paintSnowGlobe(ctx, scene, w, h, opts.includeOuterBackground, (c) => {
+    withPhotos(photos, () => paintSnowGlobe(ctx, scene, w, h, opts.includeOuterBackground, (c) => {
       drawFlakes(c, SETTLED);
       drawFlakes(c, floatingFlakesAt(t ?? 0.37, t === undefined ? 18 : 40));
-    });
+    }));
   }
   return canvas;
 }
@@ -197,58 +258,98 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
   ctx.font = `700 ${u * 6.4}px ${serif}`;
   ctx.fillText('탄생 증명서', w / 2, u * 20);
 
-  // 눈사람 썸네일
+  // ── 레이아웃: 항목과 소개글 높이를 먼저 측정한 뒤 남는 공간을 썸네일에 배정 ──
+  const p = scene.profile;
+  const name = p.name.trim() || '이름 없는 눈사람';
+  const left = u * 12;
+  const maxW = w - u * 24;
+  const labelW = u * 22;
+  const rowLineH = u * 4.2;
+  const measure = (s: string) => ctx.measureText(s).width;
+  const rows: [string, string][] = [
+    ['탄생일', p.birthDate ? formatBirthDate(p.birthDate) : '—'],
+    ['성격', p.traits.length ? p.traits.join(', ') : '—'],
+    ['좋아하는 것', p.likes.length ? p.likes.join(', ') : '—'],
+  ];
+  ctx.font = `400 ${u * 3.2}px ${sans}`;
+  const rowLines = rows.map(([, v]) => wrapText(measure, v, maxW - labelW, 2));
+  const rowsH = rowLines.reduce((acc, l) => acc + u * 6 + (l.length - 1) * rowLineH, 0);
+
   const thumbTop = u * 24;
-  const thumbH = Math.min(h * 0.36, w * 0.5);
+  const bottom = h - u * 8; // 바느질 테두리 안쪽
+  const nameBlock = u * 11;
+  const thumbMax = Math.min(h * 0.36, w * 0.5);
+  const thumbMin = Math.min(thumbMax, u * 20);
+  const bio = p.bio.trim();
+  // 오른쪽 아래 도장 자리를 비워 둔 폭
+  const bioW = maxW - u * 20;
+  let bioLines: string[] = [];
+  let bioSize = u * 3.1;
+  let bioLineH = bioSize * 1.42;
+  const bioHead = u * 12; // '소개' 라벨 + 간격
+  if (bio) {
+    const avail = bottom - thumbTop - thumbMin - nameBlock - rowsH - bioHead;
+    // 큰 글자부터 시도: 잘리지 않고 들어가는 가장 큰 크기 선택
+    const sizes = [3.1, 2.8, 2.55, 2.3, 2.1].map((k) => u * k);
+    for (let i = 0; i < sizes.length; i++) {
+      const size = sizes[i];
+      const lh = size * 1.42;
+      const maxLines = Math.max(1, Math.min(8, Math.floor(avail / lh)));
+      ctx.font = `400 ${size}px ${serif}`;
+      const full = wrapText(measure, bio, bioW, 1000);
+      const last = i === sizes.length - 1;
+      if (full.length <= maxLines || last) {
+        bioSize = size;
+        bioLineH = lh;
+        bioLines = full.length <= maxLines ? full : wrapText(measure, bio, bioW, maxLines);
+        break;
+      }
+    }
+  }
+  const bioH = bio ? bioHead + bioLines.length * bioLineH : 0;
+  const thumbH = Math.max(thumbMin, Math.min(thumbMax, bottom - thumbTop - nameBlock - rowsH - bioH));
+
+  // 눈사람 썸네일
   ctx.save();
   ctx.fillStyle = 'rgba(254, 252, 247, 0.55)';
   ctx.beginPath();
   ctx.ellipse(w / 2, thumbTop + thumbH * 0.92, thumbH * 0.42, thumbH * 0.06, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-  drawSnowmanFit(ctx, scene, (w - thumbH) / 2, thumbTop, thumbH, thumbH, 0.02);
+  const photos = await buildPhotoOverrides([[scene.snowman, snowmanFitScale(scene, thumbH, thumbH, 0.02)]]);
+  withPhotos(photos, () => drawSnowmanFit(ctx, scene, (w - thumbH) / 2, thumbTop, thumbH, thumbH, 0.02));
 
-  // 항목
-  const p = scene.profile;
-  const name = p.name.trim() || '이름 없는 눈사람';
+  // 이름
   let y = thumbTop + thumbH + u * 8;
+  ctx.textAlign = 'center';
   ctx.fillStyle = cocoa;
   ctx.font = `700 ${u * 5.4}px ${serif}`;
   ctx.fillText(name, w / 2, y);
   y += u * 3;
 
-  const left = u * 12;
-  const maxW = w - u * 24;
-  const rows: [string, string][] = [
-    ['탄생일', p.birthDate ? formatBirthDate(p.birthDate) : '—'],
-    ['성격', p.traits.length ? p.traits.join(', ') : '—'],
-    ['좋아하는 것', p.likes.length ? p.likes.join(', ') : '—'],
-  ];
+  // 항목
   ctx.textAlign = 'left';
-  const labelW = u * 22;
-  for (const [label, value] of rows) {
+  rows.forEach(([label], idx) => {
     y += u * 6;
     ctx.fillStyle = oak;
     ctx.font = `600 ${u * 3}px ${sans}`;
     ctx.fillText(label, left, y);
     ctx.fillStyle = cocoa;
     ctx.font = `400 ${u * 3.2}px ${sans}`;
-    const lines = wrapText((s) => ctx.measureText(s).width, value, maxW - labelW, 2);
-    lines.forEach((line, i) => ctx.fillText(line, left + labelW, y + i * u * 4.2));
-    y += (lines.length - 1) * u * 4.2;
-  }
-  // 소개
-  if (p.bio.trim()) {
+    const lines = rowLines[idx];
+    lines.forEach((line, i) => ctx.fillText(line, left + labelW, y + i * rowLineH));
+    y += (lines.length - 1) * rowLineH;
+  });
+
+  // 소개 (여러 줄)
+  if (bio) {
     y += u * 7;
     ctx.fillStyle = oak;
     ctx.font = `600 ${u * 3}px ${sans}`;
     ctx.fillText('소개', left, y);
     ctx.fillStyle = cocoa;
-    ctx.font = `400 ${u * 3.1}px ${serif}`;
-    const remaining = Math.max(1, Math.floor((h - u * 14 - y) / (u * 4.4)));
-    // 오른쪽 아래 도장 자리를 비워 둔다
-    const lines = wrapText((s) => ctx.measureText(s).width, p.bio.trim(), maxW - u * 20, Math.min(6, remaining));
-    lines.forEach((line, i) => ctx.fillText(line, left, y + u * 5 + i * u * 4.4));
+    ctx.font = `400 ${bioSize}px ${serif}`;
+    bioLines.forEach((line, i) => ctx.fillText(line, left, y + u * 5 + i * bioLineH));
   }
 
   // 도장
