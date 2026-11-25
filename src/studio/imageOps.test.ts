@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adjustPixels, isIdentityAdjust } from './imageOps';
+import { adjustPixels, coverDrawSize, isIdentityAdjust } from './imageOps';
 import { captureFileName } from './stageDraw';
 
 const px = (...v: number[]) => new Uint8ClampedArray(v);
@@ -35,5 +35,12 @@ describe('adjustPixels', () => {
 describe('captureFileName', () => {
   it('has no personal data and a stable format', () => {
     expect(captureFileName('live', new Date(2026, 0, 2, 3, 4, 5))).toBe('somsom-live-20260102-030405.png');
+  });
+});
+
+describe('coverDrawSize', () => {
+  it('covers the target keeping aspect', () => {
+    expect(coverDrawSize(1536, 1024, 1000, 1000)).toEqual({ w: 1500, h: 1000 });
+    expect(coverDrawSize(100, 400, 300, 600)).toEqual({ w: 300, h: 1200 });
   });
 });

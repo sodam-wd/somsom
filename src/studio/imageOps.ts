@@ -3,7 +3,6 @@
 import { loadAsset } from '../assets/loader';
 import type { Background, Photo } from '../types/scene';
 import { LOGICAL_SIZE } from '../types/scene';
-import { coverSourceRect } from './geometry';
 import { loadDataUrlImage } from './photoFile';
 
 export interface ColorAdjust {
@@ -106,17 +105,25 @@ export async function loadBackgroundSource(bg: Background, presetFallback?: stri
 }
 
 /**
- * 배경 그리기 규칙 (editor-engine 과 공유):
- * 대상 w×h 에 cover-fit 중앙 배치 → translate(w/2+(x/L-0.5)w, h/2+(y/L-0.5)h) → rotate → scale.
+ * 배경 그리기 규칙 (render/globe.ts drawBackground 와 동일):
+ * 이미지 전체를 w×h 를 덮는(cover) 크기로, 중심 (x/L·w, y/L·h) 에 rotate → scale 하여 그린다.
+ * 기본(x=y=L/2, scale 1, 0°)이면 영역을 꽉 채운다.
  */
 export function drawBackground(ctx: CanvasRenderingContext2D, src: BgSource, bg: Pick<Background, 'x' | 'y' | 'scale' | 'rotation'>, w: number, h: number): void {
-  const r = coverSourceRect(src.width, src.height, w, h);
+  const { w: cw, h: ch } = coverDrawSize(src.width, src.height, w, h);
+  const s = Math.max(0.05, bg.scale);
   ctx.save();
-  ctx.translate(w / 2 + (bg.x / LOGICAL_SIZE - 0.5) * w, h / 2 + (bg.y / LOGICAL_SIZE - 0.5) * h);
+  ctx.translate((bg.x / LOGICAL_SIZE) * w, (bg.y / LOGICAL_SIZE) * h);
   ctx.rotate((bg.rotation * Math.PI) / 180);
-  ctx.scale(bg.scale, bg.scale);
-  ctx.drawImage(src.source, r.x, r.y, r.width, r.height, -w / 2, -h / 2, w, h);
+  ctx.drawImage(src.source, (-cw * s) / 2, (-ch * s) / 2, cw * s, ch * s);
   ctx.restore();
+}
+
+/** 이미지를 w×h 에 cover 로 맞춘 그리기 크기 */
+export function coverDrawSize(imgW: number, imgH: number, w: number, h: number): { w: number; h: number } {
+  if (!(imgW > 0) || !(imgH > 0)) return { w, h };
+  const s = Math.max(w / imgW, h / imgH);
+  return { w: imgW * s, h: imgH * s };
 }
 
 /** 작품 밝기 보정 캔버스 (1 이면 원본 반환) */

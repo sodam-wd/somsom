@@ -37,7 +37,7 @@ function useArtwork(scene: Scene) {
   );
 }
 
-export function StudioStage({ mode, className, onCapture }: StudioStageProps) {
+export function StudioStage({ mode, className, onCapture, onRequestMode }: StudioStageProps) {
   const scene = useEditor((s) => s.scene);
   const placement = scene.cameraPlacement;
   const outer = scene.outerBackground;
@@ -264,7 +264,7 @@ export function StudioStage({ mode, className, onCapture }: StudioStageProps) {
                       다시 시도
                     </button>
                   )}
-                  <button type="button" className="st-btn" onClick={() => setFallbackPhoto(true)}>
+                  <button type="button" className="st-btn" onClick={() => (onRequestMode ? onRequestMode('photo') : setFallbackPhoto(true))}>
                     사진으로 대신하기
                   </button>
                 </div>
