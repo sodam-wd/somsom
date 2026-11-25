@@ -18,7 +18,7 @@ export function createFlakes(count: number, seed = 7): Flake[] {
       y: SNOW_FLOOR_Y + rnd() * 30 - 6,
       vx: 0,
       vy: 0,
-      r: 3 + rnd() * 5,
+      r: 5 + rnd() * 7,
       settled: true,
       phase: rnd() * Math.PI * 2,
     });

@@ -22,8 +22,26 @@ export function isTypingTarget(t: EventTarget | null): boolean {
   return false;
 }
 
+/**
+ * 대상 캔버스 선택: 포커스된 캔버스 → 선택 객체가 속한 target 의 캔버스 → 가장 최근 등록.
+ */
+function activeEntry(): Entry | undefined {
+  const active = typeof document !== 'undefined' ? document.activeElement : null;
+  const focused = stack.find((e) => {
+    const el = e.el();
+    return !!el && !!active && (el === active || el.contains(active));
+  });
+  if (focused) return focused;
+  const { scene, selectedId } = sceneStore.getState();
+  const found = selectedId ? findLayer(scene, selectedId) : null;
+  if (found) {
+    for (let i = stack.length - 1; i >= 0; i--) if (stack[i].target === found.target) return stack[i];
+  }
+  return stack[stack.length - 1];
+}
+
 function onKeyDown(e: KeyboardEvent) {
-  const top = stack[stack.length - 1];
+  const top = activeEntry();
   if (!top || e.defaultPrevented || isTypingTarget(e.target)) return;
   const mod = e.ctrlKey || e.metaKey;
   const key = e.key;

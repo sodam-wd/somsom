@@ -245,8 +245,9 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
     ctx.fillText('소개', left, y);
     ctx.fillStyle = cocoa;
     ctx.font = `400 ${u * 3.1}px ${serif}`;
-    const remaining = Math.max(1, Math.floor((h - u * 18 - y) / (u * 4.4)));
-    const lines = wrapText((s) => ctx.measureText(s).width, p.bio.trim(), maxW, Math.min(6, remaining));
+    const remaining = Math.max(1, Math.floor((h - u * 14 - y) / (u * 4.4)));
+    // 오른쪽 아래 도장 자리를 비워 둔다
+    const lines = wrapText((s) => ctx.measureText(s).width, p.bio.trim(), maxW - u * 20, Math.min(6, remaining));
     lines.forEach((line, i) => ctx.fillText(line, left, y + u * 5 + i * u * 4.4));
   }
 
