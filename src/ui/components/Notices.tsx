@@ -18,7 +18,7 @@ const emit = () => subs.forEach((f) => f());
 export function notify(kind: NoticeKind, text: string, action?: Notice['action']): number {
   const id = ++seq;
   // 성공하면 이전 오류 안내는 정리
-  const base = kind === 'success' ? list.filter((n) => n.kind !== 'error') : list;
+  const base = (kind === 'success' ? list.filter((n) => n.kind !== 'error') : list).filter((n) => n.text !== text);
   list = [...base.slice(-3), { id, kind, text, action }];
   emit();
   if (kind !== 'error') window.setTimeout(() => dismiss(id), action ? 7000 : 3800);

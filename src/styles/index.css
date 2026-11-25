@@ -324,8 +324,12 @@ code { font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace; font-si
   display: flex; justify-content: center; pointer-events: none;
 }
 .work__floating > * { pointer-events: auto; }
-/* 꾸미기: 눈사람이 캔버스 아래쪽에 서므로 빠른 도구는 위에 */
-.app--dress .work__floating { top: 8px; bottom: auto; }
+/* 꾸미기: 눈사람(가운데)을 가리지 않도록 빠른 도구는 왼쪽 세로 막대 */
+.app--dress .work__floating { top: 8px; bottom: 8px; left: 8px; right: auto; align-items: flex-start; }
+.app--dress .work__floating .quick-actions--compact {
+  flex-direction: column; overflow-x: hidden; overflow-y: auto; max-height: 100%;
+  touch-action: pan-y; overscroll-behavior: contain;
+}
 
 /* ── Rail ──────────────────────────────────────────────── */
 .rail { display: flex; flex-direction: column; gap: 4px; }
@@ -537,8 +541,9 @@ legend { display: flex; align-items: center; gap: 6px; font-weight: 700; margin-
 .somsom-roll__bodies { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px; padding: 2px; border-radius: 999px; background: rgba(229, 218, 203, 0.6); max-width: 100%; }
 @media (max-width: 379.98px) {
   .somsom-roll__bodies { display: flex; flex: 1 1 100%; flex-wrap: nowrap; }
-  .somsom-roll__body { flex: 1 1 0; min-width: 0; padding-inline: 6px; font-size: 0.84rem; }
+  .somsom-roll__body { flex: 1 1 0; min-width: 0; padding-inline: 4px; font-size: 0.8rem; letter-spacing: -0.02em; }
 }
+.somsom-roll__body, .somsom-roll__restart, .somsom-roll__add { white-space: nowrap; word-break: keep-all; }
 .somsom-roll__body, .somsom-roll__restart, .somsom-roll__add {
   min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent;
   font-weight: 700; font-size: 0.9rem; color: var(--ink-soft);
