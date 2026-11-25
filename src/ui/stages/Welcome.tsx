@@ -1,12 +1,14 @@
 // workshop-ui 소유: Welcome — 로고와 작품, 시작/불러오기.
-import { useAsset } from '../../assets/loader';
+import { useState } from 'react';
+import { assetUrl } from '../../assets/loader';
+import { ASSETS_BY_ID } from '../../assets/manifest';
 import { Icon } from '../components/Icon';
-import { PlaceholderBadge } from '../components/AssetTile';
 import { sceneStore, useEditor } from '../engine';
 import { OpenWorkButton, hasWork } from '../workFile';
 
 export function Welcome({ onOpenAssets }: { onOpenAssets: () => void }) {
-  const logo = useAsset('B01');
+  // B01 은 확정 원본(실제 파일) → 로더/임시 생성 대기 없이 바로 표시
+  const [logoFailed, setLogoFailed] = useState(false);
   const scene = useEditor((s) => s.scene);
   const resume = hasWork(scene);
 
@@ -20,20 +22,22 @@ export function Welcome({ onOpenAssets }: { onOpenAssets: () => void }) {
   return (
     <div className="welcome">
       <div className="welcome__art">
-        {logo ? (
+        {logoFailed ? (
+          <div className="welcome__logo welcome__logo--loading" role="img" aria-label="somsom Little Winter 로고 (불러오지 못함)">
+            somsom · Little Winter
+          </div>
+        ) : (
           <img
             className="welcome__logo"
-            src={logo.url}
+            src={assetUrl(ASSETS_BY_ID.B01)}
             width={1536}
             height={1024}
+            decoding="async"
+            fetchPriority="high"
+            onError={() => setLogoFailed(true)}
             alt="somsom Little Winter — 유리 돔 안의 양모 펠트 눈사람 로고"
           />
-        ) : (
-          <div className="welcome__logo welcome__logo--loading" role="status">
-            로고를 불러오는 중…
-          </div>
         )}
-        <PlaceholderBadge id="B01" />
       </div>
       <div className="welcome__panel">
         <p className="welcome__eyebrow">양모 펠트 눈사람 공방</p>

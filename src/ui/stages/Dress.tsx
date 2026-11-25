@@ -7,10 +7,11 @@ import { AssetTile } from '../components/AssetTile';
 import { CategoryRail, type RailItem } from '../components/CategoryRail';
 import { Icon } from '../components/Icon';
 import { LayerControls, QuickActions } from '../components/LayerControls';
-import { announce, notify } from '../components/Notices';
+import { announce, clearErrors, notify } from '../components/Notices';
 import { WorkLayout } from '../components/WorkLayout';
 import { CATEGORY_LABELS, assetLabel } from '../labels';
 import { useIsDesktop } from '../hooks';
+import { snowmanPlacement } from '../placement';
 
 export const DRESS_CATEGORIES = ['body', 'eyes', 'nose', 'mouth', 'blush', 'hat', 'scarf', 'arms', 'clothes', 'decor', 'props', 'friends'] as const;
 
@@ -27,6 +28,7 @@ function PhotoPanel() {
       }
       const id = sceneStore.addPhotoLayer(res.value);
       if (id) sceneStore.select(id);
+      clearErrors();
       notify('success', '얼굴 사진을 넣었어요. 조절 패널에서 자르기·색감·경계를 다듬어 보세요.');
     } catch (e) {
       notify('error', `사진을 불러오지 못했어요. 다시 시도해 주세요. (${e instanceof Error ? e.message : String(e)})`);
@@ -100,7 +102,8 @@ export function Dress() {
   ];
 
   const add = (id: string, init?: { x: number; y: number }) => {
-    const lid = sceneStore.addLayer('snowman', id, init);
+    const auto = snowmanPlacement(id, sceneStore.getState().scene.snowman);
+    const lid = sceneStore.addLayer('snowman', id, init ? { ...auto, ...init } : auto);
     if (lid) sceneStore.select(lid);
     announce(`${assetLabel(id)}을(를) 추가했어요`);
   };

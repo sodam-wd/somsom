@@ -78,10 +78,25 @@ function MaterialVar({ id }: { id: (typeof MATERIAL_IDS)[number] }) {
   return null;
 }
 
+/**
+ * 소재 에셋을 유휴 시간에 하나씩 로드한다. (실제 PNG가 없으면 임시 Canvas 생성이
+ * 동기적으로 실행되므로 첫 화면 메인 스레드를 막지 않도록 분산)
+ */
 export function MaterialVars() {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (n >= MATERIAL_IDS.length) return;
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (h: number) => void };
+    if (w.requestIdleCallback) {
+      const h = w.requestIdleCallback(() => setN((v) => v + 1), { timeout: 600 });
+      return () => w.cancelIdleCallback?.(h);
+    }
+    const t = window.setTimeout(() => setN((v) => v + 1), n === 0 ? 300 : 60);
+    return () => window.clearTimeout(t);
+  }, [n]);
   return (
     <>
-      {MATERIAL_IDS.map((id) => (
+      {MATERIAL_IDS.slice(0, n).map((id) => (
         <MaterialVar key={id} id={id} />
       ))}
     </>

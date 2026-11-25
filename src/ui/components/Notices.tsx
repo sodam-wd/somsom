@@ -17,10 +17,19 @@ const emit = () => subs.forEach((f) => f());
 
 export function notify(kind: NoticeKind, text: string, action?: Notice['action']): number {
   const id = ++seq;
-  list = [...list.slice(-3), { id, kind, text, action }];
+  // 성공하면 이전 오류 안내는 정리
+  const base = kind === 'success' ? list.filter((n) => n.kind !== 'error') : list;
+  list = [...base.slice(-3), { id, kind, text, action }];
   emit();
   if (kind !== 'error') window.setTimeout(() => dismiss(id), action ? 7000 : 3800);
   return id;
+}
+
+/** 오류 알림 모두 닫기 (단계 이동/같은 작업 성공 시) */
+export function clearErrors(): void {
+  if (!list.some((n) => n.kind === 'error')) return;
+  list = list.filter((n) => n.kind !== 'error');
+  emit();
 }
 
 export function dismiss(id: number): void {

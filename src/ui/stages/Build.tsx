@@ -11,6 +11,7 @@ import { announce } from '../components/Notices';
 import { WorkLayout } from '../components/WorkLayout';
 import { BASE_LABELS, CONTAINER_LABELS, assetLabel } from '../labels';
 import { useIsDesktop } from '../hooks';
+import { worldPlacement } from '../placement';
 
 type Section = 'container' | 'base' | 'landscape' | 'friends' | 'inner';
 const SECTIONS: { id: Section; label: string; iconAsset?: string }[] = [
@@ -40,7 +41,7 @@ export function GlobeBench({ mode, setMode, shakeKey, onShake }: { mode: 'edit' 
             showContainer
             className="editor-canvas"
             onDropAsset={(id, x, y) => {
-              const lid = sceneStore.addLayer('world', id, { x, y });
+              const lid = sceneStore.addLayer('world', id, { ...worldPlacement(id, sceneStore.getState().scene.world), x, y });
               if (lid) sceneStore.select(lid);
             }}
           />
@@ -81,7 +82,7 @@ export function Build() {
   }));
 
   const addWorld = (id: string) => {
-    const lid = sceneStore.addLayer('world', id);
+    const lid = sceneStore.addLayer('world', id, worldPlacement(id, sceneStore.getState().scene.world));
     if (lid) sceneStore.select(lid);
     setMode('edit');
     announce(`${assetLabel(id)}을(를) 스노우볼에 추가했어요`);

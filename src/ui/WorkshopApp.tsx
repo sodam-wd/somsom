@@ -7,7 +7,7 @@ import { MaterialVars, useVisualViewportVars } from './hooks';
 import { STAGE_LABELS } from './labels';
 import { hasWork } from './workFile';
 import { AssetStatusPanel } from './components/AssetStatusPanel';
-import { Notices } from './components/Notices';
+import { Notices, clearErrors } from './components/Notices';
 import { TopBar } from './components/TopBar';
 import { Welcome } from './stages/Welcome';
 import { Roll } from './stages/Roll';
@@ -44,6 +44,7 @@ export function WorkshopApp() {
       first.current = false;
       return;
     }
+    clearErrors();
     heading.current?.focus({ preventScroll: true });
     window.scrollTo({ top: 0 });
   }, [stage]);
