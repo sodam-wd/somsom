@@ -13,3 +13,4 @@ planning/
 reference/
 .claude/
 CLAUDE.md
+*.tsbuildinfo
