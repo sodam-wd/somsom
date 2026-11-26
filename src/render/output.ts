@@ -134,7 +134,7 @@ export async function renderSnowGlobe(scene: Scene, opts: GlobeRenderOptions): P
   await prepareScene(scene);
   // 출력 px / world 논리 단위
   const worldK = globeFit(w, h).scale * (GLOBE_LAYOUT.glass.size / LOGICAL_SIZE);
-  const placement = snowmanPlacement(scene.snowman);
+  const placement = snowmanPlacement(scene.snowman, scene.containerId);
   const photos = await buildPhotoOverrides([
     [scene.world, worldK],
     [scene.snowman, worldK * (placement?.scale ?? 1)],

@@ -24,22 +24,22 @@ export function glassInteriorPath(kind: ContainerId, w: number, h: number = w): 
     p.arc(x + cx * s, y + cy * s, r * s, a, Math.PI - a, true);
     p.closePath();
   } else if (kind === 'arch') {
-    p.moveTo(...P(0.14, 0.92));
-    p.lineTo(...P(0.14, 0.44));
-    p.arc(x + 0.5 * s, y + 0.44 * s, 0.36 * s, Math.PI, 0, false);
-    p.lineTo(...P(0.86, 0.92));
+    p.moveTo(...P(0.22, 0.915));
+    p.lineTo(...P(0.22, 0.4));
+    p.ellipse(x + 0.5 * s, y + 0.4 * s, 0.28 * s, 0.245 * s, 0, Math.PI, Math.PI * 2, false);
+    p.lineTo(...P(0.78, 0.915));
     p.closePath();
   } else {
-    p.moveTo(...P(0.38, 0.06));
-    p.lineTo(...P(0.62, 0.06));
-    p.lineTo(...P(0.62, 0.24));
-    p.quadraticCurveTo(...P(0.82, 0.26), ...P(0.82, 0.42));
-    p.lineTo(...P(0.82, 0.8));
-    p.quadraticCurveTo(...P(0.82, 0.92), ...P(0.7, 0.92));
-    p.lineTo(...P(0.3, 0.92));
-    p.quadraticCurveTo(...P(0.18, 0.92), ...P(0.18, 0.8));
-    p.lineTo(...P(0.18, 0.42));
-    p.quadraticCurveTo(...P(0.18, 0.26), ...P(0.38, 0.24));
+    p.moveTo(...P(0.428, 0.215));
+    p.lineTo(...P(0.588, 0.215));
+    p.lineTo(...P(0.588, 0.262));
+    p.quadraticCurveTo(...P(0.71, 0.29), ...P(0.714, 0.42));
+    p.lineTo(...P(0.714, 0.85));
+    p.quadraticCurveTo(...P(0.714, 0.905), ...P(0.66, 0.905));
+    p.lineTo(...P(0.35, 0.905));
+    p.quadraticCurveTo(...P(0.294, 0.905), ...P(0.294, 0.85));
+    p.lineTo(...P(0.294, 0.42));
+    p.quadraticCurveTo(...P(0.298, 0.29), ...P(0.428, 0.262));
     p.closePath();
   }
   return p;

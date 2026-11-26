@@ -23,6 +23,15 @@ export const GLOBE_LAYOUT = {
 export const GROUND_RECT: Rect = { x: 0, y: 620, width: LOGICAL_SIZE, height: LOGICAL_SIZE };
 /** 눈사람을 세울 영역 (world 논리 좌표, 바닥 맞춤) */
 export const SNOWMAN_BOX: Rect = { x: 250, y: 340, width: 500, height: 520 };
+/** 용기별 눈사람 영역: 안쪽이 좁은 용기는 그 안에 들어가도록 */
+const SNOWMAN_BOXES: Record<ContainerId, Rect> = {
+  round: SNOWMAN_BOX,
+  arch: { x: 270, y: 380, width: 460, height: 490 },
+  bottle: { x: 320, y: 450, width: 360, height: 420 },
+};
+export function snowmanBox(id: ContainerId | undefined): Rect {
+  return (id && SNOWMAN_BOXES[id]) || SNOWMAN_BOX;
+}
 /** 눈이 쌓이는 높이 (world 논리 y) */
 export const SNOW_FLOOR_Y = 880;
 
@@ -46,22 +55,24 @@ export function traceContainerInterior(ctx: CanvasRenderingContext2D | Path2D, i
     ctx.arc(x + cx * size, y + cy * size, r * size, a, Math.PI - a, true);
     ctx.closePath();
   } else if (id === 'arch') {
-    m(0.14, 0.92);
-    l(0.14, 0.44);
-    ctx.arc(x + 0.5 * size, y + 0.44 * size, 0.36 * size, Math.PI, 0, false);
-    l(0.86, 0.92);
+    // 클로슈형 유리 돔 (실제 PNG A058/A059 안쪽): 곧은 옆면 + 타원 지붕
+    m(0.22, 0.915);
+    l(0.22, 0.4);
+    ctx.ellipse(x + 0.5 * size, y + 0.4 * size, 0.28 * size, 0.245 * size, 0, Math.PI, Math.PI * 2, false);
+    l(0.78, 0.915);
     ctx.closePath();
   } else {
-    m(0.38, 0.06);
-    l(0.62, 0.06);
-    l(0.62, 0.24);
-    q(0.82, 0.26, 0.82, 0.42);
-    l(0.82, 0.8);
-    q(0.82, 0.92, 0.7, 0.92);
-    l(0.3, 0.92);
-    q(0.18, 0.92, 0.18, 0.8);
-    l(0.18, 0.42);
-    q(0.18, 0.26, 0.38, 0.24);
+    // 코르크 유리병 (실제 PNG A060/A061 안쪽): 좁은 목 + 둥근 어깨 + 몸통
+    m(0.428, 0.215);
+    l(0.588, 0.215);
+    l(0.588, 0.262);
+    q(0.71, 0.29, 0.714, 0.42);
+    l(0.714, 0.85);
+    q(0.714, 0.905, 0.66, 0.905);
+    l(0.35, 0.905);
+    q(0.294, 0.905, 0.294, 0.85);
+    l(0.294, 0.42);
+    q(0.298, 0.29, 0.428, 0.262);
     ctx.closePath();
   }
 }
@@ -110,14 +121,14 @@ export function drawBackground(ctx: CanvasRenderingContext2D, bg: Background, w:
 }
 
 /** 눈사람 레이어 → world 좌표 변환 (bbox 를 SNOWMAN_BOX 에 바닥 맞춤). 비어 있으면 null. */
-export function snowmanPlacement(snowman: Layer[]): { scale: number; dx: number; dy: number } | null {
+export function snowmanPlacement(snowman: Layer[], containerId?: ContainerId): { scale: number; dx: number; dy: number } | null {
   const bb = layersBBox(snowman, getLayerSize);
   if (!bb) return null;
-  return fitRect(bb, SNOWMAN_BOX, 'bottom');
+  return fitRect(bb, snowmanBox(containerId), 'bottom');
 }
 
-export function drawSnowmanInWorld(ctx: CanvasRenderingContext2D, snowman: Layer[], alpha = 1): boolean {
-  const p = snowmanPlacement(snowman);
+export function drawSnowmanInWorld(ctx: CanvasRenderingContext2D, snowman: Layer[], alpha = 1, containerId?: ContainerId): boolean {
+  const p = snowmanPlacement(snowman, containerId);
   if (!p) return true;
   ctx.save();
   ctx.translate(p.dx, p.dy);
@@ -169,7 +180,7 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, scene: Scene, hooks: Gl
   ok = drawBackground(ctx, scene.innerBackground, LOGICAL_SIZE, LOGICAL_SIZE) && ok;
   ok = drawGround(ctx) && ok;
   ok = renderLayers(ctx, scene.world) && ok;
-  ok = drawSnowmanInWorld(ctx, scene.snowman) && ok;
+  ok = drawSnowmanInWorld(ctx, scene.snowman, 1, scene.containerId) && ok;
   hooks.particles?.(ctx);
   ctx.restore();
   // 5) 전면 반사 유리

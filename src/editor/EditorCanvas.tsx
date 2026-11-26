@@ -140,7 +140,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
         ctx.restore();
         renderLayers(ctx, scene.world);
         // 눈사람은 world 편집에서 참고용 (선택 불가)
-        drawSnowmanInWorld(ctx, scene.snowman, 0.92);
+        drawSnowmanInWorld(ctx, scene.snowman, 0.92, scene.containerId);
         if (guide) drawContainerGuide(ctx, scene, 'front');
       } else {
         renderLayers(ctx, scene.snowman);
