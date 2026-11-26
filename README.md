@@ -83,7 +83,7 @@ https://sodam-wd.github.io/somsom/ (게시 전)
 
 - **에셋 미완료:** 유리 용기 전후면 6개(`public/assets/glass/`)와 촬영 배경 4종(`public/assets/background/`)이 아직 없어 임시 그림을 씁니다. 실제 PNG를 정해진 경로에 넣으면 코드 수정 없이 바뀝니다. 촬영 배경 4종은 제안 상태입니다.
 - **GIF 미구현:** 스노우볼 GIF 저장(P1)은 아직 구현하지 않았습니다. 버튼만 '준비 중'으로 보입니다.
-- **이미지 용량:** 실제 에셋 PNG는 모두 합쳐 약 43MB(한 장 0.05–1.3MB)입니다. 느린 모바일 네트워크에서는 처음 서랍을 열 때 재료 그림이 잠시 빈 칸으로 보일 수 있습니다.
+- **이미지 용량:** 실제 에셋 PNG는 모두 합쳐 약 30MB입니다. 느린 모바일 네트워크에서는 처음 서랍을 열 때 재료 그림이 잠시 빈 칸으로 보일 수 있습니다.
 - **미검증 항목:** 위 '지원 환경'의 확인하지 않은 항목은 실제 기기에서 검증하지 않았습니다.
 
 ## 개발자용 실행
@@ -96,7 +96,7 @@ npm run preview    # 빌드 결과 미리보기
 npm test           # 단위 테스트
 ```
 
-React, TypeScript, Vite, Canvas 2D, Pointer Events를 씁니다. 빌드 결과는 상대 경로를 쓰므로 GitHub Pages 저장소 하위 경로에서도 동작합니다.
+React, TypeScript, Vite, Canvas 2D, Pointer Events를 씁니다. 빌드 결과는 상대 경로를 쓰므로 GitHub Pages 저장소 하위 경로에서도 동작합니다. `main`에 푸시하면 `.github/workflows/deploy.yml`이 테스트·빌드 후 Pages에 배포합니다(저장소 Settings → Pages → Source를 "GitHub Actions"로 설정해야 함).
 
 ## 라이선스
 
