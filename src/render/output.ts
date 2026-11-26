@@ -22,7 +22,7 @@ function sideOf(n: number, fallback: number): number {
 async function prepareScene(scene: Scene, extraIds: string[] = []): Promise<void> {
   await prepareLayers([...scene.snowman, ...scene.world]);
   await Promise.all([...globeAssetIds(scene), ...extraIds].map((id) => loadAsset(id).catch(() => null)));
-  for (const bg of [scene.innerBackground, scene.outerBackground]) {
+  for (const bg of [scene.outerBackground]) {
     if (bg.kind === 'photo' && bg.photo) await ensureBackgroundCanvas(bg.photo);
   }
 }

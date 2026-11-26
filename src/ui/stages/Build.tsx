@@ -1,8 +1,8 @@
-// workshop-ui 소유: Build — 유리 용기 3종·받침대 2종·풍경/친구 배치·내부 배경·흔들기 미리보기.
+// workshop-ui 소유: Build — 유리 용기 3종·받침대 2종·풍경/친구 배치·흔들기 미리보기. (내부 배경은 사용자 요청으로 제거 — 유리 너머로 바깥이 비친다)
 import { useState } from 'react';
 import { assetsInCategory } from '../../assets/manifest';
 import { CONTAINERS, type BaseId, type ContainerId } from '../../types/scene';
-import { BackgroundEditor, EditorCanvas, SnowGlobeView, sceneStore, useEditor, useSelectedLayer } from '../engine';
+import { EditorCanvas, SnowGlobeView, sceneStore, useEditor, useSelectedLayer } from '../engine';
 import { AssetTile } from '../components/AssetTile';
 import { CategoryRail, type RailItem } from '../components/CategoryRail';
 import { Icon } from '../components/Icon';
@@ -13,13 +13,12 @@ import { BASE_LABELS, CONTAINER_LABELS, assetLabel } from '../labels';
 import { useIsDesktop } from '../hooks';
 import { worldPlacement } from '../placement';
 
-type Section = 'container' | 'base' | 'landscape' | 'friends' | 'inner';
+type Section = 'container' | 'base' | 'landscape' | 'friends';
 const SECTIONS: { id: Section; label: string; iconAsset?: string }[] = [
   { id: 'container', label: '유리 용기', iconAsset: 'A059' },
   { id: 'base', label: '받침대', iconAsset: 'A062' },
   { id: 'landscape', label: '풍경', iconAsset: 'A048' },
   { id: 'friends', label: '친구들', iconAsset: 'A044' },
-  { id: 'inner', label: '내부 배경', iconAsset: 'BG02' },
 ];
 
 export function GlobeBench({ mode, setMode, shakeKey, onShake }: { mode: 'edit' | 'preview'; setMode: (m: 'edit' | 'preview') => void; shakeKey: number; onShake: () => void }) {
@@ -120,13 +119,6 @@ export function Build() {
           ))}
         </div>
         <BaseColorPicker />
-      </div>
-    );
-  } else if (section === 'inner') {
-    list = (
-      <div className="bg-editor-wrap">
-        <p className="hint">유리 안쪽 배경이에요. 바깥 촬영 배경과 따로 편집돼요.</p>
-        <BackgroundEditor which="inner" />
       </div>
     );
   } else {

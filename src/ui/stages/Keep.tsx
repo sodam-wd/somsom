@@ -101,7 +101,6 @@ export function Keep() {
         {(mode === 'studio' || mode === 'photo') && (
           <details className="fold" open>
             <summary>배경 고르기</summary>
-            <p className="hint">유리 안쪽 배경과 따로 편집돼요.</p>
             <BackgroundEditor which="outer" />
           </details>
         )}

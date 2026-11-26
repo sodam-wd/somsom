@@ -1,5 +1,5 @@
 // editor-engine 소유 (T1). 스노우볼 합성: 레이아웃·용기 클립·배경·눈사람 배치·레이어 순서.
-// 순서: 받침대(유리 바로 아래에 붙여 일체형) → 후면 유리 → 내부 배경/바닥(A064)/풍경(world) → 눈사람 → 입자 → 전면 반사 유리.
+// 순서: 받침대(유리 바로 아래에 붙여 일체형) → 후면 유리 → 바닥(A064)/풍경(world) → 눈사람 → 입자 → 전면 반사 유리.
 import { getLoadedAsset } from '../assets/loader';
 import {
   CONTAINERS, LOGICAL_SIZE, type Background, type ContainerId, type Layer, type Scene,
@@ -23,9 +23,9 @@ export const GLOBE_LAYOUT = {
  * 받침대 폭을 유리 바닥 폭보다 조금 넓게 두어 유리가 받침대 위에 앉은 일체형으로 보이게 한다.
  */
 export const BASE_FIT: Record<ContainerId, { width: number; v: number }> = {
-  round: { width: 0.6, v: 0.925 },
-  arch: { width: 0.72, v: 0.925 },
-  bottle: { width: 0.56, v: 0.925 },
+  round: { width: 0.45, v: 0.925 },
+  arch: { width: 0.61, v: 0.925 },
+  bottle: { width: 0.43, v: 0.925 },
 };
 /** 받침대 PNG 윗면 타원의 세로 반지름 / 물체 폭 (실측 약 0.15) */
 const BASE_FACE_RY = 0.152;
@@ -259,7 +259,7 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, scene: Scene, hooks: Gl
   ctx.translate(glass.x, glass.y);
   ctx.scale(glass.size / LOGICAL_SIZE, glass.size / LOGICAL_SIZE);
   clipInteriorWorld(ctx, scene.containerId);
-  ok = drawBackground(ctx, scene.innerBackground, LOGICAL_SIZE, LOGICAL_SIZE) && ok;
+  // 내부 배경은 쓰지 않는다 (사용자 요청): 투명한 유리 너머로 바깥 배경이 비친다. 예전 작업 파일의 값은 무시.
   ok = drawGround(ctx) && ok;
   ok = renderLayers(ctx, scene.world) && ok;
   ok = drawSnowmanInWorld(ctx, scene.snowman, 1, scene.containerId) && ok;
@@ -299,7 +299,7 @@ export function globeFit(w: number, h: number): { scale: number; dx: number; dy:
 export function globeAssetIds(scene: Scene): string[] {
   const ids = CONTAINERS[scene.containerId] ?? CONTAINERS.round;
   const out = [ids.back, ids.front, scene.baseId, 'A064'];
-  for (const bg of [scene.innerBackground, scene.outerBackground]) {
+  for (const bg of [scene.outerBackground]) {
     if (bg.kind === 'preset' && bg.presetId) out.push(bg.presetId);
   }
   return out;

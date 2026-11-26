@@ -8,7 +8,7 @@ import { ASSETS_BY_ID } from '../assets/manifest';
 import { renderLayers } from '../render/layers';
 import { getLayerImage, getLayerSize, isOpaqueAt, subscribeRenderCache } from '../render/images';
 import {
-  GLOBE_LAYOUT, GLOBE_SPACE, clipInteriorWorld, drawBackground, drawContainerGuide, drawGround, drawSnowmanInWorld,
+  GLOBE_LAYOUT, GLOBE_SPACE, clipInteriorWorld, drawContainerGuide, drawGround, drawSnowmanInWorld,
 } from '../render/globe';
 import { isBodyLayer } from './roll';
 import '../render/photo';
@@ -135,7 +135,6 @@ export function EditorCanvas(props: EditorCanvasProps) {
         if (guide) drawContainerGuide(ctx, scene, 'back');
         ctx.save();
         clipInteriorWorld(ctx, scene.containerId);
-        drawBackground(ctx, scene.innerBackground, LOGICAL_SIZE, LOGICAL_SIZE);
         drawGround(ctx);
         ctx.restore();
         renderLayers(ctx, scene.world);

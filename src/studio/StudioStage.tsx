@@ -33,7 +33,7 @@ export const MODE_LABEL: Record<StudioMode, string> = {
 function useArtwork(scene: Scene) {
   return useLatestAsync(
     () => renderSnowGlobe(scene, { width: ARTWORK_SIZE, height: ARTWORK_SIZE, includeOuterBackground: false }),
-    [scene.snowman, scene.world, scene.containerId, scene.baseId, scene.baseColor, scene.innerBackground],
+    [scene.snowman, scene.world, scene.containerId, scene.baseId, scene.baseColor],
     120,
   );
 }
