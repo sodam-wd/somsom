@@ -3,6 +3,7 @@
 import type { LayerTarget } from '../types/scene';
 import { findLayer } from './store';
 import { sceneStore } from './useEditor';
+import { isBodyLayer } from './roll';
 
 interface Entry { target: LayerTarget | null; el: () => HTMLElement | null }
 const stack: Entry[] = [];
@@ -76,7 +77,7 @@ function onKeyDown(e: KeyboardEvent) {
   }
   if (mod && lower === 'd') {
     e.preventDefault();
-    sceneStore.duplicateLayer(layer.id);
+    if (!isBodyLayer(layer)) sceneStore.duplicateLayer(layer.id);
     return;
   }
   if (key === '[' || key === ']' || e.code === 'BracketLeft' || e.code === 'BracketRight') {

@@ -8,8 +8,9 @@ import { ASSETS_BY_ID } from '../assets/manifest';
 import { renderLayers } from '../render/layers';
 import { getLayerImage, getLayerSize, isOpaqueAt, subscribeRenderCache } from '../render/images';
 import {
-  clipInteriorWorld, drawBackground, drawContainerGuide, drawGround, drawSnowmanInWorld,
+  GLOBE_LAYOUT, GLOBE_SPACE, clipInteriorWorld, drawBackground, drawContainerGuide, drawGround, drawSnowmanInWorld,
 } from '../render/globe';
+import { isBodyLayer } from './roll';
 import '../render/photo';
 import { useElementSize } from '../render/useElementSize';
 import { findLayer } from './store';
@@ -65,6 +66,19 @@ interface GestureState {
   open: boolean;
 }
 
+/**
+ * 화면 표시 변환 = 보기(zoom/pan) ∘ 틀.
+ * 스노우볼 편집(유리 표시)에서는 최종 스노우볼과 같은 구성(유리가 받침대 위에 앉은 모습)을 보여 주도록
+ * world 좌표를 GLOBE_LAYOUT.glass 사각형으로 축소 배치한다.
+ */
+function frameView(view: View, cssSize: number, framed: boolean): View {
+  if (!framed) return view;
+  const { glass } = GLOBE_LAYOUT;
+  const ox = (glass.x / GLOBE_SPACE) * cssSize;
+  const oy = (glass.y / GLOBE_SPACE) * cssSize;
+  return { zoom: view.zoom * (glass.size / GLOBE_SPACE), panX: view.panX + ox * view.zoom, panY: view.panY + oy * view.zoom };
+}
+
 function layersOf(target: LayerTarget): Layer[] {
   return sceneStore.getState().scene[target];
 }
@@ -110,7 +124,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
       raf = 0;
       if (!alive) return;
       const { target: t, showContainer: guide } = propsRef.current;
-      const view = viewStore.get(t);
+      const view = frameView(viewStore.get(t), cssSize, t === 'world' && guide);
       const k = (cssSize / LOGICAL_SIZE) * view.zoom;
       const { scene } = sceneStore.getState();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -183,7 +197,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
         }, 350);
         if (e.shiftKey) {
           sceneStore.updateLayer(sel.id, { rotation: normalizeAngle(sel.rotation + delta * 0.15) });
-        } else {
+        } else if (!isBodyLayer(sel)) {
           const f = Math.exp(-delta * 0.0015);
           const sx = clampScale(sel.scaleX * f);
           sceneStore.updateLayer(sel.id, { scaleX: sx, scaleY: sel.scaleY * (sx / sel.scaleX) });
@@ -223,8 +237,12 @@ export function EditorCanvas(props: EditorCanvasProps) {
     const r = canvasRef.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
-  const toLogical = (p: Point): Point => screenToLogical(p, propsRef.current.cssSize, viewStore.get(propsRef.current.target));
-  const pxPerLogical = () => (propsRef.current.cssSize / LOGICAL_SIZE) * viewStore.get(propsRef.current.target).zoom;
+  const effView = (): View => {
+    const { target: t, showContainer: guide, cssSize: s } = propsRef.current;
+    return frameView(viewStore.get(t), s, t === 'world' && guide);
+  };
+  const toLogical = (p: Point): Point => screenToLogical(p, propsRef.current.cssSize, effView());
+  const pxPerLogical = () => (propsRef.current.cssSize / LOGICAL_SIZE) * effView().zoom;
 
   const openGesture = () => {
     if (!g.current.open) {
@@ -247,10 +265,12 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const hitHandle = (layer: Layer, p: Point): 'scale' | 'rotate' | null => {
     const k = pxPerLogical();
     const sz = layerDrawSize(layer, getLayerSize(layer));
-    const view = viewStore.get(propsRef.current.target);
+    const view = effView();
     const toCss = (q: Point) => ({ x: q.x * k + view.panX, y: q.y * k + view.panY });
     const rot = toCss(toParent(layer, { x: 0, y: -sz.height / 2 - ROTATE_OFFSET / k }));
     if (distance(rot, p) <= HANDLE_HIT) return 'rotate';
+    // 굴린 눈덩이는 크기 고정
+    if (isBodyLayer(layer)) return null;
     for (const c of scaleHandles(layer, sz, k)) {
       if (distance(toCss(c), p) <= HANDLE_HIT) return 'scale';
     }
@@ -335,7 +355,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
     if (s0 && distance(s0, p) > TAP_SLOP) st.moved = true;
     const k = pxPerLogical();
     const start = st.layerStart;
-    const view = viewStore.get(t);
+    const view = effView();
 
     switch (st.mode) {
       case 'move': {
@@ -369,7 +389,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
         const d = pinchDelta({ a: a0, b: b0 }, { a: st.pointers.get(ia)!, b: st.pointers.get(ib)! });
         if (st.mode === 'pinchLayer') {
           if (!start) return;
-          const sx = clampScale(start.scaleX * d.scale);
+          const sx = isBodyLayer(start) ? start.scaleX : clampScale(start.scaleX * d.scale);
           sceneStore.updateLayer(start.id, {
             x: start.x + d.translate.x / k,
             y: start.y + d.translate.y / k,
@@ -521,7 +541,7 @@ function drawSelection(ctx: CanvasRenderingContext2D, layer: Layer, k: number) {
   ctx.strokeStyle = COLOR_WOOL;
   ctx.lineWidth = 1.6 * px;
   ctx.stroke();
-  scaleHandles(layer, sz, k).forEach((c) => dot(c, COLOR_WOOL));
+  if (!isBodyLayer(layer)) scaleHandles(layer, sz, k).forEach((c) => dot(c, COLOR_WOOL));
   ctx.restore();
 }
 

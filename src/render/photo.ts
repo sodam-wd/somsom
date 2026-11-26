@@ -20,9 +20,53 @@ function drawCrop(img: HTMLImageElement, photo: Photo, w: number, h: number, ctx
   ctx.drawImage(img, c.x, c.y, cw, ch, (w - dw) / 2, (h - dh) / 2, dw, dh);
 }
 
+/**
+ * 색칠한 마스크 → side 크기 알파 배열. 경계 부드럽게(feather)는 작게 줄였다 키우는 방식으로 흐린다
+ * (canvas filter 미지원 브라우저 대응).
+ */
+async function paintedMaskAlpha(photo: Photo, side: number): Promise<Uint8ClampedArray | null> {
+  if (!photo.mask) return null;
+  const m = await loadImageUrl(photo.mask).catch(() => null);
+  if (!m) return null;
+  const feather = Math.max(0, Math.min(1, photo.feather));
+  // feather 0 → 거의 그대로, 1 → 변의 약 1/20 해상도까지 줄여 크게 흐림
+  const small = Math.max(12, Math.round(side / (1 + feather * 19)));
+  let src: CanvasImageSource = m;
+  let cur = Math.max(m.width, m.height);
+  // 단계적으로 줄이기 (계단 현상 방지)
+  while (cur / 2 >= small) {
+    cur = Math.round(cur / 2);
+    const c = createCanvas(cur, cur);
+    const cx = c.getContext('2d');
+    if (!cx) break;
+    cx.imageSmoothingQuality = 'high';
+    cx.drawImage(src, 0, 0, cur, cur);
+    src = c;
+  }
+  const out = createCanvas(side, side);
+  const octx = out.getContext('2d', { willReadFrequently: true });
+  if (!octx) return null;
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  // 한 번 중간 크기를 거쳐 키우면 더 매끄럽다
+  const mid = createCanvas(Math.min(side, cur * 4), Math.min(side, cur * 4));
+  const mctx = mid.getContext('2d');
+  if (mctx) {
+    mctx.imageSmoothingQuality = 'high';
+    mctx.drawImage(src, 0, 0, mid.width, mid.height);
+    src = mid;
+  }
+  octx.drawImage(src, 0, 0, side, side);
+  const d = octx.getImageData(0, 0, side, side).data;
+  const a = new Uint8ClampedArray(side * side);
+  for (let i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
+  return a;
+}
+
 export async function renderPhoto(photo: Photo, size: number): Promise<HTMLCanvasElement> {
   const side = Math.max(16, Math.min(MAX_PHOTO_SIDE, Math.round(size)));
   const img = await loadImageUrl(photo.dataUrl);
+  const painted = await paintedMaskAlpha(photo, side);
   const out = createCanvas(side, side);
   const ctx = out.getContext('2d', { willReadFrequently: true });
   if (!ctx) return out;
@@ -40,7 +84,7 @@ export async function renderPhoto(photo: Photo, size: number): Promise<HTMLCanva
     for (let x = 0; x < side; x++) {
       const u = ((x + 0.5) / side) * 2 - 1;
       const i = (y * side + x) * 4;
-      const m = ellipseMaskAlpha(u, v, feather);
+      const m = painted ? painted[y * side + x] / 255 : ellipseMaskAlpha(u, v, feather);
       px[i + 3] = px[i + 3] * m;
       if (noise > 0 && m > 0) {
         const n = (rnd() - 0.5) * noise;

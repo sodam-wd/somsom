@@ -189,7 +189,8 @@ export function drawContainerGuide(ctx: CanvasRenderingContext2D, scene: Scene, 
     return;
   }
   drawAssetSquare(ctx, ids.front, 0, 0, LOGICAL_SIZE, 0.4);
-  drawAssetSquare(ctx, scene.baseId, (base.x - glass.x) * k, (base.y - glass.y) * k, base.size * k, 0.55);
+  // 받침대는 최종 스노우볼과 같은 위치·불투명도로 (유리가 받침대 위에 앉은 모습)
+  drawAssetSquare(ctx, scene.baseId, (base.x - glass.x) * k, (base.y - glass.y) * k, base.size * k);
   ctx.save();
   ctx.beginPath();
   traceContainerInterior(ctx, scene.containerId, 0, 0, LOGICAL_SIZE);

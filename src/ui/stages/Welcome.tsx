@@ -6,7 +6,7 @@ import { Icon } from '../components/Icon';
 import { sceneStore, useEditor } from '../engine';
 import { OpenWorkButton, hasWork } from '../workFile';
 
-export function Welcome({ onOpenAssets }: { onOpenAssets: () => void }) {
+export function Welcome() {
   // B01 은 확정 원본(실제 파일) → 로더/임시 생성 대기 없이 바로 표시
   const [logoFailed, setLogoFailed] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -70,9 +70,6 @@ export function Welcome({ onOpenAssets }: { onOpenAssets: () => void }) {
           <li>작업은 이 기기의 브라우저 안에서만 처리돼요. 사진도 밖으로 전송되지 않아요.</li>
           <li>새로고침하거나 창을 닫으면 작업이 사라져요. 소장 단계에서 작업 파일(JSON)로 저장해 두세요.</li>
         </ul>
-        <button type="button" className="link-btn" onClick={onOpenAssets}>
-          <Icon name="info" size={18} /> 에셋 현황 보기
-        </button>
       </div>
     </div>
   );

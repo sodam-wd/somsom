@@ -66,7 +66,13 @@ function parsePhoto(v: unknown, path: string): Photo {
   const o = obj(v, path);
   const dataUrl = str(o.dataUrl, `${path}.dataUrl`, MAX_SCENE_TEXT);
   if (!/^data:image\/(png|jpeg|webp|gif);base64,/i.test(dataUrl)) fail(`${path}.dataUrl`, '이미지 data URL 이 아닙니다');
+  let mask: string | undefined;
+  if (o.mask !== undefined) {
+    mask = str(o.mask, `${path}.mask`, MAX_SCENE_TEXT);
+    if (!/^data:image\/png;base64,/i.test(mask)) fail(`${path}.mask`, 'PNG data URL 이 아닙니다');
+  }
   return {
+    ...(mask ? { mask } : {}),
     dataUrl,
     crop: parseCrop(o.crop, `${path}.crop`),
     saturation: num(o.saturation, `${path}.saturation`, 0, 2),

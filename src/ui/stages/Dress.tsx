@@ -13,7 +13,8 @@ import { CATEGORY_LABELS, assetLabel } from '../labels';
 import { useIsDesktop } from '../hooks';
 import { snowmanPlacement } from '../placement';
 
-export const DRESS_CATEGORIES = ['body', 'eyes', 'nose', 'mouth', 'blush', 'hat', 'scarf', 'arms', 'clothes', 'decor', 'props', 'friends'] as const;
+// 몸통(눈덩이)은 굴리기 단계에서 굴린 것만 쓴다 — 꾸미기에서 따로 추가하지 않음
+export const DRESS_CATEGORIES = ['eyes', 'nose', 'mouth', 'blush', 'hat', 'scarf', 'arms', 'clothes', 'decor', 'props', 'friends'] as const;
 
 function PhotoPanel() {
   const input = useRef<HTMLInputElement>(null);
@@ -70,7 +71,7 @@ export function SnowmanBench({ onDrop }: { onDrop: (id: string, x: number, y: nu
         {count === 0 && (
           <div className="canvas-empty" aria-hidden="true">
             <span className="canvas-empty__art" />
-            아직 눈덩이가 없어요. 몸통을 고르거나 굴리기 단계에서 만들어 보세요.
+            아직 눈덩이가 없어요. 굴리기 단계에서 눈덩이를 굴려 주세요.
           </div>
         )}
       </div>
@@ -79,7 +80,7 @@ export function SnowmanBench({ onDrop }: { onDrop: (id: string, x: number, y: nu
 }
 
 export function Dress() {
-  const [cat, setCat] = useState<string>('body');
+  const [cat, setCat] = useState<string>('eyes');
   const desktop = useIsDesktop();
   const snowman = useEditor((s) => s.scene.snowman);
   const sel = useSelectedLayer();

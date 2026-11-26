@@ -4,6 +4,7 @@ import { PHOTO_ASSET_ID, LOGICAL_SIZE, type Layer } from '../../types/scene';
 import type { ZMove } from '../../types/contracts';
 import { PhotoAdjustPanel, sceneStore, useSelectedLayer } from '../engine';
 import { assetLabel } from '../labels';
+import { isBodyLayer } from '../../editor/roll';
 import { Icon, type IconName } from './Icon';
 import { RangeField } from './RangeField';
 
@@ -18,16 +19,18 @@ export function layerName(layer: Layer): string {
 
 export function QuickActions({ layer, compact }: { layer: Layer; compact?: boolean }) {
   const z = (m: ZMove) => sceneStore.moveLayerZ(layer.id, m);
+  // 굴린 눈덩이는 복제 불가 (굴리기에서 만든 것만 사용)
+  const body = isBodyLayer(layer);
   const actions: { icon: IconName; label: string; run: () => void; danger?: boolean }[] = [
     { icon: 'flip', label: '좌우 반전', run: () => sceneStore.updateLayer(layer.id, { flipX: !layer.flipX }) },
-    {
+    ...(body ? [] : [{
       icon: 'copy',
       label: '복제',
       run: () => {
         const id = sceneStore.duplicateLayer(layer.id);
         if (id) sceneStore.select(id);
       },
-    },
+    } as const]),
     { icon: 'up', label: '앞으로', run: () => z('up') },
     { icon: 'down', label: '뒤로', run: () => z('down') },
     { icon: 'top', label: '맨 앞으로', run: () => z('top') },
@@ -120,13 +123,17 @@ export function ColorControl({ layer }: { layer: Layer }) {
 
 export function TransformControls({ layer }: { layer: Layer }) {
   const scale = Math.abs(layer.scaleX);
+  const body = isBodyLayer(layer);
   return (
     <fieldset className="transform-controls">
       <legend>
-        <Icon name="move" size={18} /> 위치·크기·회전
+        <Icon name="move" size={18} /> {body ? '위치·회전' : '위치·크기·회전'}
       </legend>
       <RangeField label="가로 위치" min={0} max={LOGICAL_SIZE} value={layer.x} onChange={(x) => sceneStore.updateLayer(layer.id, { x })} {...gesture} />
       <RangeField label="세로 위치" min={0} max={LOGICAL_SIZE} value={layer.y} onChange={(y) => sceneStore.updateLayer(layer.id, { y })} {...gesture} />
+      {body ? (
+        <p className="hint">굴린 눈덩이는 굴린 크기 그대로 써요.</p>
+      ) : (
       <RangeField
         label="크기"
         min={0.1}
@@ -137,6 +144,7 @@ export function TransformControls({ layer }: { layer: Layer }) {
         onChange={(v) => sceneStore.updateLayer(layer.id, { scaleX: v, scaleY: v * (Math.abs(layer.scaleY) / (scale || 1)) })}
         {...gesture}
       />
+      )}
       <RangeField
         label="회전"
         min={-180}

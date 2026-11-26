@@ -31,6 +31,14 @@ describe('serializeScene / parseScene', () => {
     if (r.ok) expect(r.value).toEqual(s);
   });
 
+  it('round-trips a painted face mask', () => {
+    const s = sampleScene();
+    s.snowman[1].photo!.mask = 'data:image/png;base64,iVBORw0KGgo=';
+    const r = parseScene(serializeScene(s));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.snowman[1].photo?.mask).toBe(s.snowman[1].photo!.mask);
+  });
+
   it('accepts files without kind field (plain scene JSON)', () => {
     const r = parseScene(JSON.stringify(createDefaultScene()));
     expect(r.ok).toBe(true);
@@ -63,6 +71,7 @@ describe('serializeScene / parseScene', () => {
     ['photo not data url', (o) => { o.snowman[1].photo.dataUrl = 'https://example.com/x.png'; }],
     ['photo saturation range', (o) => { o.snowman[1].photo.saturation = 3; }],
     ['crop missing', (o) => { delete o.snowman[1].photo.crop; }],
+    ['mask not png data url', (o) => { o.snowman[1].photo.mask = 'https://example.com/m.png'; }],
     ['non-photo layer with photo', (o) => { o.snowman[0].photo = o.snowman[1].photo; }],
     ['bad container', (o) => { o.containerId = 'cube'; }],
     ['bad base', (o) => { o.baseId = 'A001'; }],

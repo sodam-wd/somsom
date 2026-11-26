@@ -37,6 +37,11 @@ export interface Photo {
   feather: number;
   /** 0..1 양모 텍스처 합성 강도 */
   textureStrength: number;
+  /**
+   * 직접 색칠해 고른 얼굴 영역 (PNG data URL, 자른 영역 기준 정사각, 알파 = 보일 부분).
+   * 없으면 기본 원형 마스크.
+   */
+  mask?: string;
 }
 
 export interface Layer {

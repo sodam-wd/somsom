@@ -2,6 +2,7 @@
 // T0 모듈 호출 계약 (리더 소유). 각 담당자는 아래 이름/시그니처를
 // 그대로 export 한다. 변경 필요 시 리더에게 요청.
 // ─────────────────────────────────────────────────────────────
+import type { ReactNode } from 'react';
 import type {
   Background, BaseId, CameraPlacement, ContainerId, Layer, LayerTarget,
   Photo, Profile, Result, Scene, Stage,
@@ -99,6 +100,8 @@ export interface RollCanvasProps {
   /** 눈덩이를 완성해 장면에 추가했을 때 */
   onAdded?: (layerId: string) => void;
   className?: string;
+  /** 옆 패널(크기·추가) 아래에 붙일 내용 (안내, 다음 단계 버튼 등) */
+  children?: ReactNode;
 }
 
 export interface SnowmanRenderOptions {
@@ -156,6 +159,8 @@ export interface StudioStageProps {
   onCapture?: (blob: Blob) => void;
   /** 내부에서 모드 전환을 요청할 때 (예: live 실패 → '사진으로 대신하기' → 'photo') */
   onRequestMode?: (mode: StudioMode) => void;
+  /** 지정하면 촬영 화면·셔터만 무대에 두고, 크기·그림자·밝기 등 조절은 이 요소(옆 패널)에 그린다 */
+  controlsTarget?: HTMLElement | null;
 }
 
 export type { Result };

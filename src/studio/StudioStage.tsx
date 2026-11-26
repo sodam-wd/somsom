@@ -1,6 +1,7 @@
 // studio-qa 소유 (T3). Keep 단계 촬영 무대: 스튜디오 / 사진 / 라이브 카메라 / 투명.
 // 라이브 카메라는 영상 위에 작품을 2D 로 겹치는 합성이며 공간 추적(AR)이 아니다.
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { sceneStore, useEditor } from '../editor';
 import { canvasToBlob, renderSnowGlobe, shareOrDownload } from '../render';
 import type { StudioMode, StudioStageProps } from '../types/contracts';
@@ -37,7 +38,7 @@ function useArtwork(scene: Scene) {
   );
 }
 
-export function StudioStage({ mode, className, onCapture, onRequestMode }: StudioStageProps) {
+export function StudioStage({ mode, className, onCapture, onRequestMode, controlsTarget }: StudioStageProps) {
   const scene = useEditor((s) => s.scene);
   const placement = scene.cameraPlacement;
   const outer = scene.outerBackground;
@@ -197,8 +198,96 @@ export function StudioStage({ mode, className, onCapture, onRequestMode }: Studi
     }
   };
 
+  const nudgeScale = (f: number) => sceneStore.setCameraPlacement(clampPlacement({ ...placement, scale: placement.scale * f }));
+
   const liveBlocked = eff === 'live' && cam.status === 'error';
   const retryable = cam.errorKind !== 'insecure' && cam.errorKind !== 'unsupported';
+
+  const modeButtons: ReactNode = eff === 'live' || (eff === 'photo' && outer.kind === 'photo') ? (
+    <>
+      {eff === 'live' && (
+        <>
+          <button type="button" className="st-btn st-btn--ghost" onClick={cam.flip} aria-label={cam.facing === 'environment' ? '전면 카메라로 전환' : '후면 카메라로 전환'}>
+            {cam.facing === 'environment' ? '전면으로' : '후면으로'}
+          </button>
+          {cam.status === 'live' && (
+            <button type="button" className="st-btn st-btn--ghost" onClick={cam.stop}>
+              카메라 끄기
+            </button>
+          )}
+        </>
+      )}
+      {eff === 'photo' && outer.kind === 'photo' && (
+        <button type="button" className="st-btn st-btn--ghost" onClick={() => fileRef.current?.click()} disabled={photoBusy}>
+          사진 바꾸기
+        </button>
+      )}
+    </>
+  ) : null;
+
+  const sideControls = (
+    <div className="st-side-controls">
+      <div className="st-size" role="group" aria-label="스노우볼 크기">
+        <button type="button" className="st-btn st-btn--ghost st-size__btn" onClick={() => nudgeScale(1 / 1.12)} aria-label="스노우볼 작게">
+          −
+        </button>
+        <Slider
+          label="크기"
+          value={placement.scale}
+          min={PLACEMENT_SCALE_MIN}
+          max={PLACEMENT_SCALE_MAX}
+          step={0.01}
+          onChange={(v) => sceneStore.setCameraPlacement({ scale: v })}
+          onGestureStart={() => sceneStore.beginGesture()}
+          onGestureEnd={() => sceneStore.endGesture()}
+        />
+        <button type="button" className="st-btn st-btn--ghost st-size__btn" onClick={() => nudgeScale(1.12)} aria-label="스노우볼 크게">
+          +
+        </button>
+      </div>
+      <div className="st-sliders">
+        <Slider
+          label="그림자"
+          value={placement.shadow}
+          min={0}
+          max={1}
+          onChange={(v) => sceneStore.setCameraPlacement({ shadow: v })}
+          onGestureStart={() => sceneStore.beginGesture()}
+          onGestureEnd={() => sceneStore.endGesture()}
+        />
+        <Slider
+          label="밝기"
+          value={placement.brightness}
+          min={0}
+          max={2}
+          format={pct}
+          onChange={(v) => sceneStore.setCameraPlacement({ brightness: v })}
+          onGestureStart={() => sceneStore.beginGesture()}
+          onGestureEnd={() => sceneStore.endGesture()}
+        />
+      </div>
+      <div className="st-stage__notes">
+        {mode === 'live' && <p className="st-tag">2D 합성 · 공간 인식(AR) 아님</p>}
+        {(eff === 'live' || eff === 'photo') && <p className="st-hint">사진과 카메라 영상은 이 기기에서만 처리되며 외부로 전송되지 않아요.</p>}
+        {eff === 'clear' && <p className="st-hint">배경 없이 투명 PNG로 저장돼요. (미리보기 바탕색은 저장되지 않아요)</p>}
+        {eff === 'studio' && outer.kind === 'none' && <p className="st-hint">배경: 린넨 스튜디오 (제안 배경)</p>}
+        {mode === 'live' && fallbackPhoto && (
+          <p className="st-hint">
+            라이브 카메라 대신 사진으로 촬영 중이에요.{' '}
+            <button type="button" className="st-btn st-btn--ghost" onClick={() => setFallbackPhoto(false)}>
+              카메라 다시 시도
+            </button>
+          </p>
+        )}
+        {bg.value?.isPlaceholder && (eff === 'studio' || eff === 'photo') && <p className="st-tag st-tag--warn">임시 배경 (실제 이미지 미생성)</p>}
+        {photoError && (
+          <p className="st-error" role="alert">
+            {photoError} 기존 배경은 그대로예요.
+          </p>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <section className={`st-stage st-stage--${eff} ${className ?? ''}`} aria-label={`촬영: ${MODE_LABEL[eff]}`}>
@@ -276,83 +365,17 @@ export function StudioStage({ mode, className, onCapture, onRequestMode }: Studi
 
       <input ref={fileRef} type="file" accept={PHOTO_ACCEPT} hidden onChange={(e) => void onPhotoFile(e.currentTarget.files?.[0])} />
 
-      <div className="st-stage__notes">
-        {mode === 'live' && <p className="st-tag">2D 합성 · 공간 인식(AR) 아님</p>}
-        {(eff === 'live' || eff === 'photo') && <p className="st-hint">사진과 카메라 영상은 이 기기에서만 처리되며 외부로 전송되지 않아요.</p>}
-        {eff === 'clear' && <p className="st-hint">배경 없이 투명 PNG로 저장돼요. (미리보기 바탕색은 저장되지 않아요)</p>}
-        {eff === 'studio' && outer.kind === 'none' && <p className="st-hint">배경: 린넨 스튜디오 (제안 배경)</p>}
-        {mode === 'live' && fallbackPhoto && (
-          <p className="st-hint">
-            라이브 카메라 대신 사진으로 촬영 중이에요.{' '}
-            <button type="button" className="st-btn st-btn--ghost" onClick={() => setFallbackPhoto(false)}>
-              카메라 다시 시도
-            </button>
-          </p>
-        )}
-        {bg.value?.isPlaceholder && (eff === 'studio' || eff === 'photo') && <p className="st-tag st-tag--warn">임시 배경 (실제 이미지 미생성)</p>}
-        {photoError && (
-          <p className="st-error" role="alert">
-            {photoError} 기존 배경은 그대로예요.
-          </p>
-        )}
-      </div>
-
       <div className="st-stage__controls">
         <div className="st-row st-row--main">
-          {eff === 'live' && (
-            <>
-              <button type="button" className="st-btn st-btn--ghost" onClick={cam.flip} aria-label={cam.facing === 'environment' ? '전면 카메라로 전환' : '후면 카메라로 전환'}>
-                {cam.facing === 'environment' ? '전면으로' : '후면으로'}
-              </button>
-              {cam.status === 'live' && (
-                <button type="button" className="st-btn st-btn--ghost" onClick={cam.stop}>
-                  카메라 끄기
-                </button>
-              )}
-            </>
-          )}
-          {eff === 'photo' && outer.kind === 'photo' && (
-            <button type="button" className="st-btn st-btn--ghost" onClick={() => fileRef.current?.click()} disabled={photoBusy}>
-              사진 바꾸기
-            </button>
-          )}
+          {!controlsTarget && modeButtons}
           <button type="button" className="st-shutter" onClick={() => void capture()} disabled={!canCapture} aria-label="촬영하기">
             <span aria-hidden="true" />
           </button>
         </div>
         {captureError && <p className="st-error" role="alert">{captureError}</p>}
-        <div className="st-sliders">
-          <Slider
-            label="크기"
-            value={placement.scale}
-            min={PLACEMENT_SCALE_MIN}
-            max={PLACEMENT_SCALE_MAX}
-            step={0.01}
-            onChange={(v) => sceneStore.setCameraPlacement({ scale: v })}
-            onGestureStart={() => sceneStore.beginGesture()}
-            onGestureEnd={() => sceneStore.endGesture()}
-          />
-          <Slider
-            label="그림자"
-            value={placement.shadow}
-            min={0}
-            max={1}
-            onChange={(v) => sceneStore.setCameraPlacement({ shadow: v })}
-            onGestureStart={() => sceneStore.beginGesture()}
-            onGestureEnd={() => sceneStore.endGesture()}
-          />
-          <Slider
-            label="밝기"
-            value={placement.brightness}
-            min={0}
-            max={2}
-            format={pct}
-            onChange={(v) => sceneStore.setCameraPlacement({ brightness: v })}
-            onGestureStart={() => sceneStore.beginGesture()}
-            onGestureEnd={() => sceneStore.endGesture()}
-          />
-        </div>
+        {!controlsTarget && sideControls}
       </div>
+      {controlsTarget && createPortal(<div className="st-stage st-side">{modeButtons && <div className="st-row">{modeButtons}</div>}{sideControls}</div>, controlsTarget)}
 
       {shot && (
         <div className="st-shot" role="dialog" aria-modal="true" aria-label="촬영 결과">

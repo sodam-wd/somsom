@@ -1,5 +1,5 @@
 // studio-qa 소유 (T3). 얼굴 사진 조절: 수동 crop + 채도/밝기/대비/경계/양모 질감.
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent as RPointerEvent } from 'react';
 import type { PhotoAdjustPanelProps } from '../types/contracts';
 import type { Photo, PhotoCrop } from '../types/scene';
 import { renderPhoto } from '../render';
@@ -57,6 +57,214 @@ function PhotoPreview({ photo }: { photo: Photo }) {
         {state === 'ready' && '미리보기'}
       </figcaption>
     </figure>
+  );
+}
+
+const MASK_SIZE = 256;
+const MASK_VIEW = 300;
+
+/**
+ * 얼굴 영역 색칠하기: 자른 사진 위를 손가락/마우스로 칠하면 칠한 부분만 눈사람 얼굴에 들어간다.
+ * 마스크는 자른 영역 기준 정사각 PNG(알파)로 저장되며, 그리기를 마칠 때마다 한 번 반영(실행 취소 1단계).
+ */
+function MaskPainter({ photo, onChange, onGestureStart, onGestureEnd }: PhotoAdjustPanelProps) {
+  const viewRef = useRef<HTMLCanvasElement>(null);
+  const maskRef = useRef<HTMLCanvasElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [tool, setTool] = useState<'paint' | 'erase'>('paint');
+  const [brush, setBrush] = useState(0.12);
+  const painting = useRef<{ id: number; last: { x: number; y: number } } | null>(null);
+  const ownMask = useRef<string | undefined>(undefined);
+  const photoRef = useRef(photo);
+  photoRef.current = photo;
+
+  const redraw = () => {
+    const c = viewRef.current;
+    const ctx = c?.getContext('2d');
+    if (!c || !ctx) return;
+    const W = c.width;
+    ctx.clearRect(0, 0, W, W);
+    const img = imgRef.current;
+    if (img) {
+      const cr = photoRef.current.crop;
+      const s = Math.max(W / Math.max(1, cr.width), W / Math.max(1, cr.height));
+      const dw = cr.width * s;
+      const dh = cr.height * s;
+      ctx.drawImage(img, cr.x, cr.y, cr.width, cr.height, (W - dw) / 2, (W - dh) / 2, dw, dh);
+    }
+    const m = maskRef.current;
+    if (m) {
+      // 칠하지 않은 곳은 어둡게, 칠한 곳은 사진 그대로
+      const dim = document.createElement('canvas');
+      dim.width = W;
+      dim.height = W;
+      const d = dim.getContext('2d');
+      if (d) {
+        d.fillStyle = 'rgba(50, 38, 28, 0.62)';
+        d.fillRect(0, 0, W, W);
+        d.globalCompositeOperation = 'destination-out';
+        d.drawImage(m, 0, 0, W, W);
+        ctx.drawImage(dim, 0, 0);
+      }
+    } else {
+      // 아직 칠하지 않음: 기본 원형 영역 안내
+      ctx.save();
+      ctx.setLineDash([8, 6]);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(254, 252, 247, 0.9)';
+      ctx.beginPath();
+      ctx.ellipse(W / 2, W / 2, W * 0.46, W * 0.46, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  useEffect(() => {
+    let alive = true;
+    loadDataUrlImage(photo.dataUrl)
+      .then((i) => {
+        if (!alive) return;
+        imgRef.current = i;
+        redraw();
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo.dataUrl]);
+
+  // 외부 변경(실행 취소, 불러오기)으로 마스크가 바뀌면 다시 읽는다
+  useEffect(() => {
+    if (photo.mask === ownMask.current && (!photo.mask || maskRef.current)) {
+      redraw();
+      return;
+    }
+    ownMask.current = photo.mask;
+    if (!photo.mask) {
+      maskRef.current = null;
+      redraw();
+      return;
+    }
+    let alive = true;
+    loadDataUrlImage(photo.mask)
+      .then((i) => {
+        if (!alive) return;
+        const c = document.createElement('canvas');
+        c.width = MASK_SIZE;
+        c.height = MASK_SIZE;
+        c.getContext('2d')?.drawImage(i, 0, 0, MASK_SIZE, MASK_SIZE);
+        maskRef.current = c;
+        redraw();
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo.mask, photo.crop]);
+
+  const toMask = (e: { clientX: number; clientY: number }) => {
+    const r = viewRef.current!.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) / r.width) * MASK_SIZE, y: ((e.clientY - r.top) / r.height) * MASK_SIZE };
+  };
+  const strokeTo = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    const m = maskRef.current;
+    const ctx = m?.getContext('2d');
+    if (!ctx) return;
+    ctx.save();
+    ctx.globalCompositeOperation = tool === 'erase' ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = '#fff';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = brush * MASK_SIZE;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x + 0.01, b.y);
+    ctx.stroke();
+    ctx.restore();
+    redraw();
+  };
+
+  const onDown = (e: RPointerEvent<HTMLCanvasElement>) => {
+    if (painting.current || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* 무시 */
+    }
+    if (!maskRef.current) {
+      const c = document.createElement('canvas');
+      c.width = MASK_SIZE;
+      c.height = MASK_SIZE;
+      maskRef.current = c;
+    }
+    onGestureStart?.();
+    const p = toMask(e);
+    painting.current = { id: e.pointerId, last: p };
+    strokeTo(p, p);
+  };
+  const onMove = (e: RPointerEvent<HTMLCanvasElement>) => {
+    const st = painting.current;
+    if (!st || st.id !== e.pointerId) return;
+    const p = toMask(e);
+    strokeTo(st.last, p);
+    st.last = p;
+  };
+  const onUp = (e: RPointerEvent<HTMLCanvasElement>) => {
+    const st = painting.current;
+    if (!st || st.id !== e.pointerId) return;
+    painting.current = null;
+    const m = maskRef.current;
+    if (m) {
+      const url = m.toDataURL('image/png');
+      ownMask.current = url;
+      onChange({ mask: url });
+    }
+    onGestureEnd?.();
+  };
+
+  return (
+    <details className="st-mask" open={Boolean(photo.mask) || undefined}>
+      <summary>얼굴 부분 색칠해서 고르기</summary>
+      <p className="st-hint">얼굴로 쓸 부분을 손가락이나 마우스로 칠해요. 칠한 부분만 눈사람 얼굴에 들어가요.</p>
+      <canvas
+        ref={viewRef}
+        className="st-mask__canvas"
+        width={MASK_VIEW * 2}
+        height={MASK_VIEW * 2}
+        role="img"
+        aria-label="얼굴 영역 색칠 캔버스"
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={onUp}
+        onContextMenu={(e) => e.preventDefault()}
+      />
+      <div className="st-row">
+        <div className="st-seg" role="radiogroup" aria-label="색칠 도구">
+          <button type="button" role="radio" aria-checked={tool === 'paint'} className="st-btn st-btn--ghost" onClick={() => setTool('paint')}>
+            칠하기
+          </button>
+          <button type="button" role="radio" aria-checked={tool === 'erase'} className="st-btn st-btn--ghost" onClick={() => setTool('erase')}>
+            지우기
+          </button>
+        </div>
+        <button
+          type="button"
+          className="st-btn st-btn--ghost"
+          disabled={!photo.mask}
+          onClick={() => {
+            maskRef.current = null;
+            ownMask.current = undefined;
+            onChange({ mask: undefined });
+          }}
+        >
+          원형으로 되돌리기
+        </button>
+      </div>
+      <Slider label="붓 크기" value={brush} min={0.04} max={0.35} step={0.01} onChange={setBrush} format={(v) => `${Math.round(v * 100)}%`} />
+    </details>
   );
 }
 
@@ -204,6 +412,8 @@ export function PhotoAdjustPanel({ photo, onChange, onGestureStart, onGestureEnd
           </button>
         </div>
       </div>
+
+      <MaskPainter photo={photo} onChange={onChange} onGestureStart={onGestureStart} onGestureEnd={onGestureEnd} />
 
       <PhotoPreview photo={photo} />
 

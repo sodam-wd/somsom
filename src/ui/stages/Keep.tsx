@@ -25,6 +25,7 @@ export function Keep() {
   const [format, setFormat] = useState<Format>('square');
   const [withBg, setWithBg] = useState(true);
   const [busy, setBusy] = useState<Job | null>(null);
+  const [sideSlot, setSideSlot] = useState<HTMLDivElement | null>(null);
   const snowmanCount = useEditor((s) => s.scene.snowman.length);
   const name = useEditor((s) => s.scene.profile.name);
 
@@ -73,21 +74,30 @@ export function Keep() {
 
   return (
     <div className="keep">
+      {/* 왼쪽: 촬영 화면과 촬영 버튼만 */}
       <section className="keep__stage" aria-label="촬영">
-        <div className="segmented segmented--modes" role="tablist" aria-label="촬영 모드">
-          {MODES.map((m) => (
-            <button key={m.id} type="button" role="tab" aria-selected={mode === m.id} onClick={() => setMode(m.id)} title={m.desc}>
-              {m.label}
-            </button>
-          ))}
-        </div>
-        <p className="hint keep__mode-desc">{MODES.find((m) => m.id === mode)?.desc}</p>
-        <div className="keep__studio">
-          <StudioStage mode={mode} className="studio-stage" onCapture={(b) => void onCapture(b)} onRequestMode={setMode} />
-        </div>
+        <StudioStage
+          mode={mode}
+          className="studio-stage"
+          onCapture={(b) => void onCapture(b)}
+          onRequestMode={setMode}
+          controlsTarget={sideSlot}
+        />
       </section>
 
-      <aside className="keep__side panel-linen" aria-label="배경과 저장">
+      {/* 오른쪽: 고르고 조절하는 패널 (이 안에서만 스크롤) */}
+      <aside className="keep__side panel-linen" aria-label="촬영 설정과 저장">
+        <div className="keep__modes">
+          <div className="segmented segmented--modes" role="tablist" aria-label="촬영 모드">
+            {MODES.map((m) => (
+              <button key={m.id} type="button" role="tab" aria-selected={mode === m.id} onClick={() => setMode(m.id)} title={m.desc}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="hint keep__mode-desc">{MODES.find((m) => m.id === mode)?.desc}</p>
+        </div>
+        <div className="keep__adjust" ref={setSideSlot} />
         {(mode === 'studio' || mode === 'photo') && (
           <details className="fold" open>
             <summary>배경 고르기</summary>

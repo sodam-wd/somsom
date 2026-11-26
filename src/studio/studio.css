@@ -143,3 +143,14 @@
 @media (prefers-reduced-motion: reduce) {
   .st-photo-adjust *, .st-bg-editor *, .st-stage * { transition: none !important; animation: none !important; }
 }
+
+/* 얼굴 영역 색칠 */
+.st-mask { display: grid; gap: 8px; padding: 8px 0; border-top: 1px dashed var(--st-oat); }
+.st-mask > summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+.st-mask[open] { gap: 10px; }
+.st-mask__canvas {
+  width: min(300px, 100%); aspect-ratio: 1; justify-self: center; border-radius: 12px; background: var(--st-oat);
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: crosshair;
+}
+.st-seg { display: inline-flex; gap: 4px; }
+.st-seg .st-btn[aria-checked="true"] { background: var(--st-oak); color: var(--st-wool); border-color: var(--st-oak); }
