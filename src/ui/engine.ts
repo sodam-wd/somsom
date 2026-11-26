@@ -68,7 +68,7 @@ const fallbackStore: SceneStore = {
   setStage: noop, select: noop,
   addLayer: () => '', addPhotoLayer: () => '', updateLayer: noop, updatePhoto: noop,
   removeLayer: noop, duplicateLayer: () => null, moveLayerZ: noop, setTint: noop,
-  setContainer: noop, setBase: noop, setBackground: noop, setProfile: noop, setCameraPlacement: noop,
+  setContainer: noop, setBase: noop, setBaseColor: noop, setBackground: noop, setProfile: noop, setCameraPlacement: noop,
   beginGesture: noop, endGesture: noop, undo: noop, redo: noop, loadScene: noop, reset: noop,
 };
 

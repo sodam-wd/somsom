@@ -41,6 +41,8 @@ export interface SceneStore {
 
   setContainer(id: ContainerId): void;
   setBase(id: BaseId): void;
+  /** 받침대 색. null = 원목 그대로 */
+  setBaseColor(color: string | null): void;
   setBackground(which: 'inner' | 'outer', bg: Background): void;
   setProfile(patch: Partial<Profile>): void;
   setCameraPlacement(patch: Partial<CameraPlacement>): void;

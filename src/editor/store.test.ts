@@ -142,19 +142,23 @@ describe('sceneStore basics', () => {
     const s = setup();
     s.setContainer('arch');
     s.setBase('A063');
+    s.setBaseColor('#BD716B');
+    s.setBaseColor('nope'); // 무시
     s.setProfile({ name: '몽실' });
     s.setProfile({ name: '몽실' }); // no-op
     s.setCameraPlacement({ shadow: 0.2 });
     s.setBackground('inner', { kind: 'preset', presetId: 'BG01', x: 500, y: 500, scale: 1, rotation: 0 });
     const sc = s.getState().scene;
     expect(sc.containerId).toBe('arch');
+    expect(sc.baseColor).toBe('#bd716b');
     expect(sc.baseId).toBe('A063');
     expect(sc.profile.name).toBe('몽실');
     expect(sc.cameraPlacement.shadow).toBe(0.2);
     expect(sc.innerBackground.kind).toBe('preset');
     expect(sc.outerBackground.kind).toBe('none');
-    for (let i = 0; i < 5; i++) s.undo();
+    for (let i = 0; i < 6; i++) s.undo();
     expect(s.getState().scene).toMatchObject({ containerId: 'round', baseId: 'A062', profile: { name: '' } });
+    expect(s.getState().scene.baseColor).toBeUndefined();
     expect(s.getState().canUndo).toBe(false);
   });
 });

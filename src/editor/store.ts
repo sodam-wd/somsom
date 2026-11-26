@@ -248,6 +248,15 @@ export function createSceneStore(initial: Scene = createDefaultScene()): SceneSt
     setBase(id: BaseId) {
       if (scene.baseId !== id) commit({ ...scene, baseId: id });
     },
+    setBaseColor(color: string | null) {
+      const c = color === null ? undefined : normalizeHex(color);
+      if (color !== null && c === undefined) return;
+      if (scene.baseColor === c) return;
+      const next = { ...scene };
+      if (c === undefined) delete next.baseColor;
+      else next.baseColor = c;
+      commit(next);
+    },
     setBackground(which, bg: Background) {
       const key = which === 'inner' ? 'innerBackground' : 'outerBackground';
       if (scene[key] !== bg) commit({ ...scene, [key]: bg });

@@ -121,6 +121,8 @@ export interface Scene {
   world: Layer[];
   containerId: ContainerId;
   baseId: BaseId;
+  /** 받침대 색 (#rrggbb). 없으면 원목 그대로 */
+  baseColor?: string;
   /** 스노우볼 내부(유리 안쪽) 배경 */
   innerBackground: Background;
   /** 스노우볼 외부(촬영/전시) 배경 */

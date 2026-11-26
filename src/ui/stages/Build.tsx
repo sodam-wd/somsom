@@ -113,10 +113,13 @@ export function Build() {
     );
   } else if (section === 'base') {
     list = (
-      <div className="tile-grid tile-grid--choice" role="radiogroup" aria-label="받침대">
-        {(['A062', 'A063'] as BaseId[]).map((id) => (
-          <AssetTile key={id} id={id} label={BASE_LABELS[id]} pressed={baseId === id} onPick={() => sceneStore.setBase(id)} size="lg" />
-        ))}
+      <div className="base-pick">
+        <div className="tile-grid tile-grid--choice" role="radiogroup" aria-label="받침대">
+          {(['A062', 'A063'] as BaseId[]).map((id) => (
+            <AssetTile key={id} id={id} label={BASE_LABELS[id]} pressed={baseId === id} onPick={() => sceneStore.setBase(id)} size="lg" />
+          ))}
+        </div>
+        <BaseColorPicker />
       </div>
     );
   } else if (section === 'inner') {
@@ -163,5 +166,54 @@ export function Build() {
       listLabel="구성"
       controlsLabel="조절"
     />
+  );
+}
+
+const BASE_SWATCHES = [
+  { c: '#fefcf7', n: '양모 흰색' },
+  { c: '#e5dacb', n: '오트' },
+  { c: '#78634f', n: '코코아' },
+  { c: '#aab8a0', n: '세이지' },
+  { c: '#bdd5df', n: '스노우블루' },
+  { c: '#bd716b', n: '베리' },
+  { c: '#e2a3a0', n: '분홍' },
+  { c: '#3b3029', n: '먹색' },
+];
+
+/** 받침대 색: 원목 그대로 또는 팔레트/직접 고르기 (나뭇결 명암은 유지) */
+function BaseColorPicker() {
+  const color = useEditor((s) => s.scene.baseColor);
+  return (
+    <fieldset className="color-control base-color">
+      <legend>
+        <Icon name="palette" size={18} /> 받침 색
+      </legend>
+      <div className="swatches" role="group" aria-label="받침 색">
+        <button
+          type="button"
+          className="swatch swatch--wood"
+          aria-label="원목 그대로"
+          title="원목 그대로"
+          aria-pressed={!color}
+          onClick={() => sceneStore.setBaseColor(null)}
+        />
+        {BASE_SWATCHES.map((s) => (
+          <button
+            key={s.c}
+            type="button"
+            className="swatch"
+            style={{ background: s.c }}
+            aria-label={s.n}
+            title={s.n}
+            aria-pressed={color === s.c}
+            onClick={() => sceneStore.setBaseColor(s.c)}
+          />
+        ))}
+        <label className="color-input" title="직접 고르기">
+          <span>직접</span>
+          <input type="color" value={color ?? '#c9a27a'} onChange={(e) => sceneStore.setBaseColor(e.currentTarget.value)} />
+        </label>
+      </div>
+    </fieldset>
   );
 }

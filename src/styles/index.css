@@ -783,3 +783,13 @@ input::placeholder, textarea::placeholder { color: #8C7A68; }
 @media (forced-colors: active) {
   .btn, .icon-btn, .tile, .drawer__tab, .segmented > button { border: 1px solid ButtonText; }
 }
+
+/* ── 받침 색 (스노우볼 > 받침대) ───────────────────────── */
+.base-pick { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 28px; }
+.base-pick > .tile-grid { flex: 0 0 auto; grid-template-columns: repeat(2, 96px); }
+.base-color { flex: 1 1 240px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.base-color legend { display: flex; align-items: center; gap: 6px; padding: 0; margin-bottom: 8px; font-weight: 700; }
+.base-color .swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
+.base-color .swatch { width: 40px; height: 40px; }
+.base-color .color-input input { width: 44px; height: 40px; }
+.swatch--wood { background: repeating-linear-gradient(100deg, #d9b98f 0 5px, #c9a27a 5px 8px, #e0c39c 8px 13px); }

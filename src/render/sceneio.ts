@@ -204,6 +204,11 @@ export function parseScene(text: string): Result<Scene> {
       profile: parseProfile(o.profile, 'profile'),
       cameraPlacement: parseCamera(o.cameraPlacement, 'cameraPlacement'),
     };
+    if (o.baseColor !== undefined && o.baseColor !== null) {
+      const t = str(o.baseColor, 'baseColor', 7);
+      if (!HEX_RE.test(t)) fail('baseColor', '#rrggbb 형식이 아닙니다');
+      scene.baseColor = t.toLowerCase();
+    }
     return { ok: true, value: scene };
   } catch (e) {
     if (e instanceof SchemaError) return { ok: false, error: `작업 파일 구조가 올바르지 않습니다 (${e.message}).` };

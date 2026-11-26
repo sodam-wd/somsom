@@ -11,15 +11,21 @@ export interface FrameInput {
   video?: { el: HTMLVideoElement; mirror: boolean } | null;
   art?: HTMLCanvasElement | null;
   placement: CameraPlacement;
+  /** 작품 안에서 바닥에 닿는 자리 (작품 크기 대비 0..1). 없으면 작품 아래쪽 기준 */
+  foot?: { cx: number; width: number; bottom: number } | null;
 }
 
 /** 작품 아래 접지 그림자 (바닥에 놓인 느낌, 왼쪽 위 자연광 → 오른쪽 아래로 약간 치우침) */
-export function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, strength: number): void {
+export function drawShadow(
+  ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, strength: number,
+  foot?: { cx: number; width: number; bottom: number } | null,
+): void {
   if (strength <= 0) return;
-  const cx = x + width * 0.53;
-  const cy = y + height * 0.965;
-  const rx = width * 0.4;
-  const ry = Math.max(2, width * 0.065);
+  const fw = foot ? foot.width : 0.76;
+  const cx = x + width * ((foot ? foot.cx : 0.5) + fw * 0.04);
+  const cy = y + height * ((foot ? foot.bottom : 0.975) - 0.01);
+  const rx = width * fw * 0.53;
+  const ry = Math.max(2, rx * 0.16);
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(1, ry / rx);
@@ -59,7 +65,7 @@ export function drawFrame(ctx: CanvasRenderingContext2D, w: number, h: number, f
   }
   if (f.art) {
     const r = placementRect(f.placement, w, h, f.art.width, f.art.height);
-    drawShadow(ctx, r.x, r.y, r.width, r.height, f.placement.shadow);
+    drawShadow(ctx, r.x, r.y, r.width, r.height, f.placement.shadow, f.foot);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(f.art, r.x, r.y, r.width, r.height);

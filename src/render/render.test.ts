@@ -39,6 +39,14 @@ describe('serializeScene / parseScene', () => {
     if (r.ok) expect(r.value.snowman[1].photo?.mask).toBe(s.snowman[1].photo!.mask);
   });
 
+  it('round-trips a base color', () => {
+    const s = sampleScene();
+    s.baseColor = '#aab8a0';
+    const r = parseScene(serializeScene(s));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.baseColor).toBe('#aab8a0');
+  });
+
   it('accepts files without kind field (plain scene JSON)', () => {
     const r = parseScene(JSON.stringify(createDefaultScene()));
     expect(r.ok).toBe(true);
@@ -75,6 +83,7 @@ describe('serializeScene / parseScene', () => {
     ['non-photo layer with photo', (o) => { o.snowman[0].photo = o.snowman[1].photo; }],
     ['bad container', (o) => { o.containerId = 'cube'; }],
     ['bad base', (o) => { o.baseId = 'A001'; }],
+    ['bad base color', (o) => { o.baseColor = 'red'; }],
     ['bg kind', (o) => { o.innerBackground.kind = 'video'; }],
     ['preset without id', (o) => { delete o.innerBackground.presetId; }],
     ['photo bg without photo', (o) => { delete o.outerBackground.photo; }],

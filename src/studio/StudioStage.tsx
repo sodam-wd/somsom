@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { sceneStore, useEditor } from '../editor';
-import { canvasToBlob, renderSnowGlobe, shareOrDownload } from '../render';
+import { canvasToBlob, globeFootprint, renderSnowGlobe, shareOrDownload } from '../render';
 import type { StudioMode, StudioStageProps } from '../types/contracts';
 import { createDefaultBackground, type CameraPlacement, type Scene } from '../types/scene';
 import { CAMERA_MESSAGES } from './camera';
@@ -33,7 +33,7 @@ export const MODE_LABEL: Record<StudioMode, string> = {
 function useArtwork(scene: Scene) {
   return useLatestAsync(
     () => renderSnowGlobe(scene, { width: ARTWORK_SIZE, height: ARTWORK_SIZE, includeOuterBackground: false }),
-    [scene.snowman, scene.world, scene.containerId, scene.baseId, scene.innerBackground],
+    [scene.snowman, scene.world, scene.containerId, scene.baseId, scene.baseColor, scene.innerBackground],
     120,
   );
 }
@@ -69,6 +69,7 @@ export function StudioStage({ mode, className, onCapture, onRequestMode, control
     video: eff === 'live' && video ? { el: video, mirror: cam.mirror } : null,
     art: artBright,
     placement,
+    foot: artBright ? globeFootprint(scene) : null,
   });
 
   // 미리보기 캔버스 (라이브 모드에서는 영상 위에 작품만 그린다 — 영상은 <video> 로 표시)
