@@ -1,4 +1,5 @@
 // editor-engine 소유 (T1). PNG 출력 렌더 (선택 핸들/UI 미포함) 및 파일 유틸.
+import { HAND_FONT, ensureHandFont } from './handFont';
 import { loadAsset } from '../assets/loader';
 import type {
   CertificateRenderOptions, GlobeRenderOptions, SnowmanRenderOptions,
@@ -211,6 +212,9 @@ export function formatBirthDate(iso: string): string {
 }
 
 /** D22 탄생 증명서 PNG. 소재 이미지에 글자를 굽지 않고, 텍스트는 코드로 렌더. */
+/** 증명서 맨 아래 문장 (미리보기와 저장본 공통) */
+export const CERT_FOOTER = '이 눈사람이 somsom 공방에서 한 땀 한 땀 태어났음을 증명합니다.';
+
 export async function renderCertificate(scene: Scene, opts: CertificateRenderOptions): Promise<HTMLCanvasElement> {
   const w = sideOf(opts.width, 1080);
   const h = sideOf(opts.height, 1350);
@@ -219,6 +223,7 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
     loadAsset(PAPER_ID).catch(() => null),
     loadAsset(STAMP_ID).catch(() => null),
   ]);
+  const handOk = await ensureHandFont();
   try {
     await document.fonts?.ready;
   } catch {
@@ -230,6 +235,9 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
   ctx.imageSmoothingQuality = 'high';
   const serif = cssFont('--font-title', SERIF_FALLBACK);
   const sans = cssFont('--font-body', SANS_FALLBACK);
+  // 증명서 글씨는 손글씨체 (불러오지 못하면 기존 글꼴). 손글씨체는 작아 보여 조금 키운다.
+  const hand = handOk ? `"${HAND_FONT}", ${serif}` : serif;
+  const hs = handOk ? 1.22 : 1;
   const u = Math.min(w, h) / 100; // 단위
 
   // 종이
@@ -255,7 +263,7 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
   ctx.font = `500 ${u * 3}px ${sans}`;
   ctx.fillText('somsom · Little Winter', w / 2, u * 12);
   ctx.fillStyle = cocoa;
-  ctx.font = `700 ${u * 6.4}px ${serif}`;
+  ctx.font = `700 ${u * 6.4 * hs}px ${hand}`;
   ctx.fillText('탄생 증명서', w / 2, u * 20);
 
   // ── 레이아웃: 항목과 소개글 높이를 먼저 측정한 뒤 남는 공간을 썸네일에 배정 ──
@@ -271,12 +279,12 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
     ['성격', p.traits.length ? p.traits.join(', ') : '—'],
     ['좋아하는 것', p.likes.length ? p.likes.join(', ') : '—'],
   ];
-  ctx.font = `400 ${u * 3.2}px ${sans}`;
+  ctx.font = `400 ${u * 3.2 * hs}px ${hand}`;
   const rowLines = rows.map(([, v]) => wrapText(measure, v, maxW - labelW, 2));
   const rowsH = rowLines.reduce((acc, l) => acc + u * 6 + (l.length - 1) * rowLineH, 0);
 
   const thumbTop = u * 24;
-  const bottom = h - u * 8; // 바느질 테두리 안쪽
+  const bottom = h - u * 13; // 바느질 테두리 안쪽 + 맨 아래 증명 문장 자리
   const nameBlock = u * 11;
   const thumbMax = Math.min(h * 0.36, w * 0.5);
   const thumbMin = Math.min(thumbMax, u * 20);
@@ -284,18 +292,18 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
   // 오른쪽 아래 도장 자리를 비워 둔 폭
   const bioW = maxW - u * 20;
   let bioLines: string[] = [];
-  let bioSize = u * 3.1;
-  let bioLineH = bioSize * 1.42;
+  let bioSize = u * 3.1 * hs;
+  let bioLineH = bioSize * 1.3;
   const bioHead = u * 12; // '소개' 라벨 + 간격
   if (bio) {
     const avail = bottom - thumbTop - thumbMin - nameBlock - rowsH - bioHead;
     // 큰 글자부터 시도: 잘리지 않고 들어가는 가장 큰 크기 선택
-    const sizes = [3.1, 2.8, 2.55, 2.3, 2.1].map((k) => u * k);
+    const sizes = [3.1, 2.8, 2.55, 2.3, 2.1].map((k) => u * k * hs);
     for (let i = 0; i < sizes.length; i++) {
       const size = sizes[i];
-      const lh = size * 1.42;
+      const lh = size * 1.3;
       const maxLines = Math.max(1, Math.min(8, Math.floor(avail / lh)));
-      ctx.font = `400 ${size}px ${serif}`;
+      ctx.font = `400 ${size}px ${hand}`;
       const full = wrapText(measure, bio, bioW, 1000);
       const last = i === sizes.length - 1;
       if (full.length <= maxLines || last) {
@@ -323,7 +331,7 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
   let y = thumbTop + thumbH + u * 8;
   ctx.textAlign = 'center';
   ctx.fillStyle = cocoa;
-  ctx.font = `700 ${u * 5.4}px ${serif}`;
+  ctx.font = `700 ${u * 5.4 * hs}px ${hand}`;
   ctx.fillText(name, w / 2, y);
   y += u * 3;
 
@@ -332,10 +340,10 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
   rows.forEach(([label], idx) => {
     y += u * 6;
     ctx.fillStyle = oak;
-    ctx.font = `600 ${u * 3}px ${sans}`;
+    ctx.font = `600 ${u * 3 * hs}px ${hand}`;
     ctx.fillText(label, left, y);
     ctx.fillStyle = cocoa;
-    ctx.font = `400 ${u * 3.2}px ${sans}`;
+    ctx.font = `400 ${u * 3.2 * hs}px ${hand}`;
     const lines = rowLines[idx];
     lines.forEach((line, i) => ctx.fillText(line, left + labelW, y + i * rowLineH));
     y += (lines.length - 1) * rowLineH;
@@ -345,20 +353,42 @@ export async function renderCertificate(scene: Scene, opts: CertificateRenderOpt
   if (bio) {
     y += u * 7;
     ctx.fillStyle = oak;
-    ctx.font = `600 ${u * 3}px ${sans}`;
+    ctx.font = `600 ${u * 3 * hs}px ${hand}`;
     ctx.fillText('소개', left, y);
     ctx.fillStyle = cocoa;
-    ctx.font = `400 ${bioSize}px ${serif}`;
+    ctx.font = `400 ${bioSize}px ${hand}`;
     bioLines.forEach((line, i) => ctx.fillText(line, left, y + u * 5 + i * bioLineH));
   }
 
+  // 맨 아래 증명 문장 (한 줄, 넘치면 글자를 줄여 맞춤)
+  {
+    const text = CERT_FOOTER;
+    let size = u * 3 * hs;
+    ctx.font = `400 ${size}px ${hand}`;
+    const fw = w - u * 16;
+    const tw = ctx.measureText(text).width;
+    if (tw > fw) {
+      size *= fw / tw;
+      ctx.font = `400 ${size}px ${hand}`;
+    }
+    ctx.textAlign = 'center';
+    ctx.fillStyle = oak;
+    ctx.fillText(text, w / 2, h - u * 8.5);
+  }
+
   // 도장
-  const ss = u * 18;
+  // 도장: 맨 아래 문장 위 오른쪽, 살짝 기울여 찍은 느낌 (종이 결이 비치도록 곱하기 합성)
+  const ss = u * 21;
   if (stamp) {
     ctx.save();
-    ctx.globalAlpha = 0.92;
+    ctx.globalAlpha = 0.9;
+    ctx.globalCompositeOperation = 'multiply';
     const k = ss / Math.max(stamp.width, stamp.height);
-    ctx.drawImage(stamp.image, w - u * 9 - stamp.width * k, h - u * 9 - stamp.height * k, stamp.width * k, stamp.height * k);
+    const sw = stamp.width * k;
+    const sh = stamp.height * k;
+    ctx.translate(w - u * 10 - sw / 2, h - u * 12 - sh / 2);
+    ctx.rotate(-0.17);
+    ctx.drawImage(stamp.image, -sw / 2, -sh / 2, sw, sh);
     ctx.restore();
   }
   return canvas;

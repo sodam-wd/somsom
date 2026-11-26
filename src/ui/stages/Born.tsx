@@ -3,6 +3,10 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { Scene } from '../../types/scene';
 import { renderSnowman, sceneStore, useEditor } from '../engine';
 import { Icon } from '../components/Icon';
+import { ensureHandFont } from '../../render/handFont';
+import { assetUrl } from '../../assets/loader';
+import { ASSETS_BY_ID } from '../../assets/manifest';
+import { CERT_FOOTER } from '../../render/output';
 import { TagInput } from '../components/TagInput';
 
 const TRAIT_SUGGEST = ['포근한', '수줍은', '장난꾸러기', '다정한', '용감한', '느긋한', '호기심 많은'];
@@ -46,6 +50,9 @@ function formatDate(d: string): string {
 export function CertificatePreview() {
   const profile = useEditor((s) => s.scene.profile);
   const { url, error } = useSnowmanPreview(480);
+  useEffect(() => {
+    void ensureHandFont();
+  }, []);
   return (
     <figure className="cert" aria-label="탄생 증명서 미리보기">
       <div className="cert__paper">
@@ -77,8 +84,8 @@ export function CertificatePreview() {
           </div>
         </dl>
         {profile.bio && <p className="cert__bio">“{profile.bio}”</p>}
-        <p className="cert__footer">이 눈사람이 somsom 공방에서 한 땀 한 땀 태어났음을 증명합니다.</p>
-        <span className="cert__stamp" aria-hidden="true" />
+        <p className="cert__footer">{CERT_FOOTER}</p>
+        <img className="cert__stamp" src={assetUrl(ASSETS_BY_ID.UI11)} alt="" aria-hidden="true" />
       </div>
     </figure>
   );

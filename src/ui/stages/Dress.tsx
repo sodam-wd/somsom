@@ -14,7 +14,7 @@ import { useIsDesktop } from '../hooks';
 import { snowmanPlacement } from '../placement';
 
 // 몸통(눈덩이)은 굴리기 단계에서 굴린 것만 쓴다 — 꾸미기에서 따로 추가하지 않음
-export const DRESS_CATEGORIES = ['eyes', 'nose', 'mouth', 'blush', 'hat', 'scarf', 'arms', 'clothes', 'decor', 'props', 'friends'] as const;
+export const DRESS_CATEGORIES = ['eyes', 'nose', 'mouth', 'blush', 'hat', 'scarf', 'arms', 'clothes', 'decor', 'props'] as const; // 풍경·친구는 스노우볼 단계에서만
 
 function PhotoPanel() {
   const input = useRef<HTMLInputElement>(null);
@@ -95,11 +95,11 @@ export function Dress() {
   }, [snowman]);
 
   const items: RailItem[] = [
+    { id: 'photo', label: CATEGORY_LABELS.photo, count: counts.photo ?? 0 },
     ...DRESS_CATEGORIES.map((c) => {
       const list = assetsInCategory(c);
       return { id: c, label: CATEGORY_LABELS[c], iconAsset: list[0]?.id, count: list.reduce((n, a) => n + (counts[a.id] ?? 0), 0) };
     }),
-    { id: 'photo', label: CATEGORY_LABELS.photo, count: counts.photo ?? 0 },
   ];
 
   const add = (id: string, init?: { x: number; y: number }) => {

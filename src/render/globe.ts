@@ -20,13 +20,13 @@ export const GLOBE_LAYOUT = {
 
 /**
  * 받침대 맞춤 (유리 사각형 정규화 단위). 폭은 유리 바닥보다 조금만 넓게,
- * 받침대 아랫변(bottom)은 유리 바닥(v≈0.94) 바로 아래 — 받침대가 유리 밑으로 조금만 보이게 한다.
+ * 받침대 아랫변(bottom) 위치. 사용자가 직접 맞춘 값 (2026-11-26).
  * 받침대는 유리보다 먼저 그려 유리 뒤에 놓이므로 윗부분은 유리와 바닥 눈에 가려진다.
  */
 export const BASE_FIT: Record<ContainerId, { width: number; bottom: number }> = {
-  round: { width: 0.45, bottom: 0.995 },
-  arch: { width: 0.61, bottom: 0.995 },
-  bottle: { width: 0.43, bottom: 0.995 },
+  round: { width: 0.51, bottom: 1.025 },
+  arch: { width: 0.64, bottom: 1.07 },
+  bottle: { width: 0.46, bottom: 1.015 },
 };
 
 /** 바닥(A064) 그리기 사각형 (world 논리 좌표). 내부 클립으로 잘린다. */
@@ -279,14 +279,7 @@ export function drawContainerGuide(ctx: CanvasRenderingContext2D, scene: Scene, 
     return;
   }
   drawAssetSquare(ctx, ids.front, 0, 0, LOGICAL_SIZE, 0.4);
-  ctx.save();
-  ctx.beginPath();
-  traceContainerInterior(ctx, scene.containerId, 0, 0, LOGICAL_SIZE);
-  ctx.setLineDash([10, 8]);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = 'rgba(145, 118, 94, 0.55)';
-  ctx.stroke();
-  ctx.restore();
+  // 유리 안쪽 점선 테두리는 그리지 않는다 (사용자 요청)
 }
 
 /** 출력 캔버스 (w×h) 에 스노우볼 구성 공간을 contain 배치하는 변환 */

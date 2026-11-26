@@ -112,13 +112,10 @@ export function Build() {
     );
   } else if (section === 'base') {
     list = (
-      <div className="base-pick">
-        <div className="tile-grid tile-grid--choice" role="radiogroup" aria-label="받침대">
-          {(['A062', 'A063'] as BaseId[]).map((id) => (
-            <AssetTile key={id} id={id} label={BASE_LABELS[id]} pressed={baseId === id} onPick={() => sceneStore.setBase(id)} size="lg" />
-          ))}
-        </div>
-        <BaseColorPicker />
+      <div className="tile-grid tile-grid--choice" role="radiogroup" aria-label="받침대">
+        {(['A062', 'A063'] as BaseId[]).map((id) => (
+          <AssetTile key={id} id={id} label={BASE_LABELS[id]} pressed={baseId === id} onPick={() => sceneStore.setBase(id)} size="lg" />
+        ))}
       </div>
     );
   } else {
@@ -147,9 +144,9 @@ export function Build() {
         worldSel ? (
           <LayerControls />
         ) : (
-          <div className="empty-panel">
-            <span className="empty-panel__art" aria-hidden="true" />
-            <p>배치 편집에서 풍경이나 친구를 탭하면 위치·크기·색을 조절할 수 있어요. 눈사람은 꾸미기 단계에서 편집해요.</p>
+          <div className="build-side">
+            <BaseColorPicker />
+            <p className="hint">배치 편집에서 풍경이나 친구를 탭하면 위치·크기·색을 조절할 수 있어요. 눈사람은 꾸미기 단계에서 편집해요.</p>
           </div>
         )
       }
