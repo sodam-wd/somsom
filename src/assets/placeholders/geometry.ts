@@ -16,9 +16,9 @@ export function glassInteriorPath(kind: ContainerId, w: number, h: number = w): 
   const P = (u: number, v: number): [number, number] => [x + u * s, y + v * s];
   if (kind === 'round') {
     const cx = 0.5;
-    const cy = 0.48;
-    const r = 0.44;
-    const flat = 0.9;
+    const cy = 0.528;
+    const r = 0.43;
+    const flat = 0.915;
     const a = Math.asin((flat - cy) / r);
     p.moveTo(...P(cx + Math.cos(a) * r, flat));
     p.arc(x + cx * s, y + cy * s, r * s, a, Math.PI - a, true);

@@ -45,11 +45,11 @@ export function traceContainerInterior(ctx: CanvasRenderingContext2D | Path2D, i
   const l = (u: number, v: number) => ctx.lineTo(...P(u, v));
   const q = (cu: number, cv: number, u: number, v: number) => ctx.quadraticCurveTo(...P(cu, cv), ...P(u, v));
   if (id === 'round') {
-    // 원형 돔, 아래는 평평하게
+    // 원형 유리 돔 (실제 PNG A056/A057 안쪽), 아래는 평평하게
     const cx = 0.5;
-    const cy = 0.48;
-    const r = 0.44;
-    const flat = 0.9;
+    const cy = 0.528;
+    const r = 0.43;
+    const flat = 0.915;
     const a = Math.asin((flat - cy) / r);
     ctx.moveTo(...P(cx + Math.cos(a) * r, flat));
     ctx.arc(x + cx * size, y + cy * size, r * size, a, Math.PI - a, true);
