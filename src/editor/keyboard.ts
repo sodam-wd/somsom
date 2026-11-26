@@ -23,6 +23,35 @@ export function isTypingTarget(t: EventTarget | null): boolean {
   return false;
 }
 
+/** 이동 키 → 방향. 방향키, WASD(자판 위치 기준이라 한글 입력 상태의 ㅈㅁㄴㅇ도 같음). 조합키가 눌리면 null. */
+const MOVE_BY_CODE: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+  KeyA: [-1, 0], KeyD: [1, 0], KeyW: [0, -1], KeyS: [0, 1],
+};
+const MOVE_BY_KEY: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+  a: [-1, 0], d: [1, 0], w: [0, -1], s: [0, 1],
+  ㅁ: [-1, 0], ㅇ: [1, 0], ㅈ: [0, -1], ㄴ: [0, 1],
+};
+export function moveKeyDir(e: { key: string; code?: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean }): [number, number] | null {
+  if (e.ctrlKey || e.metaKey || e.altKey) return null;
+  return (e.code && MOVE_BY_CODE[e.code]) || MOVE_BY_KEY[e.key.length === 1 ? e.key.toLowerCase() : e.key] || null;
+}
+/** 이동 키 식별자 (누르고 있는 키 추적용) */
+export function moveKeyId(e: { key: string; code?: string }): string {
+  return e.code || e.key;
+}
+/** 방향키가 원래 동작을 하는 컨트롤(슬라이더·라디오·탭·선택상자)에 포커스가 있으면 방향키는 양보 */
+export function arrowBelongsToControl(e: { key: string }): boolean {
+  if (!e.key.startsWith('Arrow')) return false;
+  const a = typeof document !== 'undefined' ? document.activeElement : null;
+  if (!(a instanceof HTMLElement)) return false;
+  if (a.tagName === 'SELECT') return true;
+  if (a.tagName === 'INPUT' && ['range', 'radio'].includes((a as HTMLInputElement).type)) return true;
+  const role = a.getAttribute('role');
+  return role === 'radio' || role === 'tab' || role === 'slider' || role === 'option';
+}
+
 /**
  * 대상 캔버스 선택: 포커스된 캔버스 → 선택 객체가 속한 target 의 캔버스 → 가장 최근 등록.
  */
@@ -87,15 +116,14 @@ function onKeyDown(e: KeyboardEvent) {
     sceneStore.moveLayerZ(layer.id, e.shiftKey ? (up ? 'top' : 'bottom') : up ? 'up' : 'down');
     return;
   }
-  if (key.startsWith('Arrow')) {
-    // 화살표는 캔버스 또는 body 포커스일 때만 (페이지 스크롤/다른 컨트롤 보호)
-    const el = top.el();
-    const active = document.activeElement;
-    if (active && active !== document.body && active !== el) return;
+  const dir = moveKeyDir(e);
+  if (dir) {
+    // 방향키·WASD(ㅈㅁㄴㅇ)로 선택한 객체 이동. 슬라이더 등 방향키를 쓰는 컨트롤에 포커스가 있으면 양보.
+    if (arrowBelongsToControl(e)) return;
     e.preventDefault();
-    const step = e.shiftKey ? 10 : 1;
-    const dx = key === 'ArrowLeft' ? -step : key === 'ArrowRight' ? step : 0;
-    const dy = key === 'ArrowUp' ? -step : key === 'ArrowDown' ? step : 0;
+    const step = e.shiftKey ? 20 : 4;
+    const dx = dir[0] * step;
+    const dy = dir[1] * step;
     if (!arrowGesture) {
       arrowGesture = true;
       sceneStore.beginGesture();
@@ -105,7 +133,7 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onKeyUp(e: KeyboardEvent) {
-  if (arrowGesture && e.key.startsWith('Arrow')) {
+  if (arrowGesture && moveKeyDir({ key: e.key, code: e.code, ctrlKey: false, metaKey: false, altKey: false })) {
     arrowGesture = false;
     sceneStore.endGesture();
   }

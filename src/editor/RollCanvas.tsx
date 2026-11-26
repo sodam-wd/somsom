@@ -12,7 +12,7 @@ import { subscribeRenderCache } from '../render/images';
 import { seededRandom } from '../render/pixels';
 import { useElementSize } from '../render/useElementSize';
 import { sceneStore, useEditor } from './useEditor';
-import { registerKeyboard } from './keyboard';
+import { arrowBelongsToControl, isTypingTarget, moveKeyDir, moveKeyId, registerKeyboard } from './keyboard';
 import {
   BODY_ASSET_IDS, ROLL_MAX_RADIUS, ROLL_MIN_RADIUS, isBodyLayer, radiusToScale, rollAngleDelta, rollRadius,
   stackPosition, type BodyAssetId,
@@ -334,16 +334,72 @@ export function RollCanvas(props: RollCanvasProps) {
     onAdded?.(id);
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLCanvasElement>) => {
-    const step = (e.shiftKey ? 60 : 24) * unitRef.current;
-    const map: Record<string, [number, number]> = {
-      ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step],
+  // PC: 방향키·WASD(ㅈㅁㄴㅇ)를 누르고 있는 동안 부드럽게 굴린다 (캔버스를 먼저 누르지 않아도 됨)
+  const rollRef = useRef(roll);
+  rollRef.current = roll;
+  const commitRef = useRef(commitStroke);
+  commitRef.current = commitStroke;
+  useEffect(() => {
+    const held = new Map<string, [number, number]>();
+    let fast = false;
+    let raf = 0;
+    let last = 0;
+    const tick = (t: number) => {
+      raf = 0;
+      if (held.size === 0) return;
+      const dt = last ? Math.min(0.05, (t - last) / 1000) : 1 / 60;
+      last = t;
+      let x = 0;
+      let y = 0;
+      held.forEach(([dx, dy]) => {
+        x += dx;
+        y += dy;
+      });
+      const len = Math.hypot(x, y);
+      if (len > 0) {
+        const speed = (fast ? 900 : 480) * unitRef.current * dt;
+        rollRef.current((x / len) * speed, (y / len) * speed);
+      }
+      raf = requestAnimationFrame(tick);
     };
-    if (map[e.key]) {
+    const stop = () => {
+      held.clear();
+      last = 0;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      commitRef.current();
+      drawRef.current();
+    };
+    const down = (e: globalThis.KeyboardEvent) => {
+      fast = e.shiftKey;
+      if (e.defaultPrevented || isTypingTarget(e.target) || arrowBelongsToControl(e)) return;
+      const dir = moveKeyDir(e);
+      if (!dir) return;
       e.preventDefault();
-      roll(...map[e.key]);
-      commitStroke();
-    } else if (e.key === 'Enter') {
+      held.set(moveKeyId(e), dir);
+      if (!raf) {
+        last = 0;
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    const up = (e: globalThis.KeyboardEvent) => {
+      fast = e.shiftKey;
+      if (!held.delete(moveKeyId(e))) return;
+      if (held.size === 0) stop();
+    };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', stop);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', stop);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const onKeyDown = (e: KeyboardEvent<HTMLCanvasElement>) => {
+    if (e.key === 'Enter') {
       e.preventDefault();
       add();
     }
@@ -357,7 +413,7 @@ export function RollCanvas(props: RollCanvasProps) {
         <canvas
           ref={canvasRef}
           tabIndex={0}
-          aria-label="눈덩이 굴리기 펠트 바닥. 아무 곳이나 누른 채 끌면 눈덩이가 굴러가며 커집니다. 화살표 키로 굴리고 Enter로 추가"
+          aria-label="눈덩이 굴리기 펠트 바닥. 아무 곳이나 누른 채 끌면 눈덩이가 굴러가며 커집니다. 방향키나 W A S D 키로도 굴릴 수 있고 Enter로 올립니다"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}

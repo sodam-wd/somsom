@@ -19,16 +19,15 @@ export const GLOBE_LAYOUT = {
 } as const;
 
 /**
- * 받침대 맞춤 (유리 사각형 정규화 단위). 받침대 윗면 타원의 중심을 유리 바닥(v)에,
- * 받침대 폭을 유리 바닥 폭보다 조금 넓게 두어 유리가 받침대 위에 앉은 일체형으로 보이게 한다.
+ * 받침대 맞춤 (유리 사각형 정규화 단위). 폭은 유리 바닥보다 조금만 넓게,
+ * 받침대 아랫변(bottom)은 유리 바닥(v≈0.94) 바로 아래 — 받침대가 유리 밑으로 조금만 보이게 한다.
+ * 받침대는 유리보다 먼저 그려 유리 뒤에 놓이므로 윗부분은 유리와 바닥 눈에 가려진다.
  */
-export const BASE_FIT: Record<ContainerId, { width: number; v: number }> = {
-  round: { width: 0.45, v: 0.925 },
-  arch: { width: 0.61, v: 0.925 },
-  bottle: { width: 0.43, v: 0.925 },
+export const BASE_FIT: Record<ContainerId, { width: number; bottom: number }> = {
+  round: { width: 0.45, bottom: 0.995 },
+  arch: { width: 0.61, bottom: 0.995 },
+  bottle: { width: 0.43, bottom: 0.995 },
 };
-/** 받침대 PNG 윗면 타원의 세로 반지름 / 물체 폭 (실측 약 0.15) */
-const BASE_FACE_RY = 0.152;
 
 /** 바닥(A064) 그리기 사각형 (world 논리 좌표). 내부 클립으로 잘린다. */
 export const GROUND_RECT: Rect = { x: 0, y: 620, width: LOGICAL_SIZE, height: LOGICAL_SIZE };
@@ -206,7 +205,7 @@ export function baseRect(scene: Scene, x: number, y: number, size: number): Rect
   const fit = BASE_FIT[scene.containerId] ?? BASE_FIT.round;
   const w = fit.width * size;
   const h = (b.height / b.width) * w;
-  return { x: x + 0.5 * size - w / 2, y: y + fit.v * size - BASE_FACE_RY * w, width: w, height: h };
+  return { x: x + 0.5 * size - w / 2, y: y + fit.bottom * size - h, width: w, height: h };
 }
 
 /** 스노우볼이 바닥에 닿는 자리 (GLOBE_SPACE 대비 0..1): 받침대 가로 중심·폭·바닥 높이. 촬영 그림자용. */

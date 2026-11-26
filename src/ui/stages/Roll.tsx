@@ -21,7 +21,7 @@ export function Roll() {
         <div className="roll__info">
           {desktop && (
             <ol className="steps">
-              <li>펠트 바닥 아무 곳이나 누른 채 끌면 눈덩이가 굴러가며 커져요.</li>
+              <li>펠트 바닥을 누른 채 끌면 굴러가며 커져요. 컴퓨터는 방향키·WASD로도 굴려요.</li>
               <li>원하는 크기가 되면 ‘올리기’를 눌러요. 위 미리보기의 점선 자리에 쌓여요.</li>
               <li>굴린 크기 그대로 눈사람이 돼요. 꾸미기에서는 크기를 바꾸지 않아요.</li>
             </ol>
