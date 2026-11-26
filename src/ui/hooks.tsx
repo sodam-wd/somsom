@@ -73,7 +73,11 @@ const MATERIAL_VAR: Record<(typeof MATERIAL_IDS)[number], string> = {
 function MaterialVar({ id }: { id: (typeof MATERIAL_IDS)[number] }) {
   const a = useAsset(id);
   useEffect(() => {
-    if (a) document.documentElement.style.setProperty(MATERIAL_VAR[id], `url("${a.url}")`);
+    if (!a) return;
+    const root = document.documentElement;
+    root.style.setProperty(MATERIAL_VAR[id], `url("${a.url}")`);
+    // 실제 PNG 소재가 있으면 CSS가 임시 모양(알약 배경·점선) 대신 이미지 자체를 쓰도록 표시
+    root.classList.toggle(`mat-real-${id}`, !a.isPlaceholder);
   }, [a, id]);
   return null;
 }
