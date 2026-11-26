@@ -43,14 +43,20 @@ export function snowmanPlacement(assetId: string, layers: Layer[]): Partial<Laye
       const d = head.d * 0.75;
       return at(head.x, head.y - (head.d / 2 + d / 2) * 0.82, d / BODY_FILL);
     }
-    case 'eyes':
-      return at(head.x, head.y - D * 0.08, D * 0.95);
+    case 'eyes': {
+      // 눈 에셋은 1개씩: 왼쪽 → 오른쪽 번갈아
+      const right = same % 2 === 1;
+      return at(head.x + (right ? 1 : -1) * D * 0.19, head.y - D * 0.08, D * 0.21);
+    }
     case 'nose':
       return at(head.x + D * 0.04, head.y + D * 0.05, D * 0.55);
     case 'mouth':
       return at(head.x, head.y + D * 0.22, D * 0.55);
-    case 'blush':
-      return at(head.x, head.y + D * 0.12, D * 0.95);
+    case 'blush': {
+      // 볼터치 에셋은 1개씩: 왼쪽 → 오른쪽 번갈아
+      const right = same % 2 === 1;
+      return at(head.x + (right ? 1 : -1) * D * 0.25, head.y + D * 0.12, D * 0.22);
+    }
     case 'hat': {
       const S = D * 1.1;
       return at(head.x, head.y - D * 0.28 - S * 0.17, S);

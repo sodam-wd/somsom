@@ -16,6 +16,17 @@ describe('placement', () => {
     expect(hat.y!).toBeLessThan(eyes.y!);
     expect(scarf.y!).toBeGreaterThan(eyes.y!);
   });
+  it('places single eyes and blush left then right on the head', () => {
+    for (const id of ['A004', 'A015']) {
+      const p1 = snowmanPlacement(id, snow);
+      const p2 = snowmanPlacement(id, [...snow, L(id, p1.x!, p1.y!, p1.scaleX!)]);
+      expect(p1.x!).toBeLessThan(500);
+      expect(p2.x!).toBeGreaterThan(500);
+      expect(Math.abs(p1.y! - 460)).toBeLessThan(60);
+      // 한 개짜리 에셋이므로 머리 지름보다 훨씬 작게
+      expect(p1.scaleX! * 200).toBeLessThan(1.3 * 200 * 0.92 * 0.4);
+    }
+  });
   it('alternates arms left/right with flip', () => {
     const a1 = snowmanPlacement('A028', snow);
     const a2 = snowmanPlacement('A028', [...snow, L('A028', a1.x!, a1.y!, 1)]);
@@ -32,6 +43,8 @@ describe('placement', () => {
   });
   it('works with an empty snowman', () => {
     const e = snowmanPlacement('A004', []);
-    expect(e.x).toBe(500);
+    // 기본 머리(x=500) 기준 첫 눈은 왼쪽
+    expect(e.x!).toBeLessThan(500);
+    expect(e.x!).toBeGreaterThan(400);
   });
 });

@@ -92,7 +92,8 @@ export function loadAsset(id: string): Promise<LoadedAsset> {
       width: img.naturalWidth,
       height: img.naturalHeight,
       isPlaceholder: false,
-      url,
+      // 절대 URL: CSS 변수 url()은 스타일시트 기준으로 해석되므로 상대 경로(base './')를 쓰면 깨진다
+      url: img.src || url,
     }))
     .catch(() => makePlaceholder(entry))
     .then((a) => {

@@ -26,11 +26,9 @@ const bodyIrregular: D = (ctx, w) => {
   felt(ctx, blob(w / 2, w / 2, r, r * 0.97, 0.07, 13, 11), PAL.wool, { box: bx(w / 2 - r, w / 2 - r, r * 2, r * 2), seed: 13, fibers: 1.4, fuzz: 1.6, shadow: 0.6 });
 };
 
-// ── eyes (한 쌍) ──────────────────────────────────────────────
+// ── eyes (1개 — 실제 에셋과 같이 한 개씩, 배치 코드가 좌우로 놓는다) ──
 const eyePair = (draw: (cx: number, cy: number, r: number, i: number) => void, w: number) => {
-  const r = w * 0.1;
-  draw(w * 0.3, w / 2, r, 0);
-  draw(w * 0.7, w / 2, r, 1);
+  draw(w / 2, w / 2, w * 0.42, 0);
 };
 const eyesBlack: D = (ctx, w) => eyePair((x, y, r, i) => button(ctx, x, y, r, PAL.ink, 2, 20 + i), w);
 const eyesBrown: D = (ctx, w) => eyePair((x, y, r, i) => button(ctx, x, y, r, PAL.cocoa, 2, 22 + i), w);
@@ -112,14 +110,13 @@ const mouthSurprised: D = (ctx, w) => {
 };
 
 // ── blush ────────────────────────────────────────────────────
+// 1개 — 실제 에셋과 같이 한 개씩, 배치 코드가 좌우로 놓는다
 const blushPair = (color: string, seed: number): D => (ctx, w) => {
-  for (const [i, x] of [w * 0.28, w * 0.72].entries()) {
-    ctx.save();
-    ctx.globalAlpha = 0.85;
-    const p = blob(x, w / 2, w * 0.15, w * 0.1, 0.06, seed + i, 12);
-    felt(ctx, p, color, { box: bx(x - w * 0.15, w * 0.4, w * 0.3, w * 0.2), seed: seed + i, shadow: 0.2, fuzz: 1.6, fibers: 1.4 });
-    ctx.restore();
-  }
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  const p = blob(w / 2, w / 2, w * 0.42, w * 0.4, 0.06, seed, 12);
+  felt(ctx, p, color, { box: bx(w * 0.08, w * 0.1, w * 0.84, w * 0.8), seed, shadow: 0.2, fuzz: 1.6, fibers: 1.4 });
+  ctx.restore();
 };
 
 // ── hats ─────────────────────────────────────────────────────
