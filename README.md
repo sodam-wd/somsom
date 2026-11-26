@@ -100,4 +100,4 @@ React, TypeScript, Vite, Canvas 2D, Pointer Events를 씁니다. 빌드 결과�
 
 ## 라이선스
 
-미정
+[MIT](LICENSE)
